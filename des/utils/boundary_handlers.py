@@ -54,6 +54,7 @@ class BoundaryHandler:
         )
 
 
+@final
 class BounceBackBoundaryHandler(BoundaryHandler):
     """
     Bounce back boundary handling strategy.
@@ -120,6 +121,7 @@ class BounceBackBoundaryHandler(BoundaryHandler):
         return result
 
 
+@final
 class ClampBoundaryHandler(BoundaryHandler):
     """
     Clamp boundary handling strategy.

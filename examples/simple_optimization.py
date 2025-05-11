@@ -3,6 +3,10 @@ import matplotlib.pyplot as plt
 from des import DESOptimizer
 from des.config import DESConfig
 from des.utils.boundary_handlers import BoundaryHandlerType
+from des.utils.benchmark_functions import (
+    Sphere,
+    Rastrigin,
+)
 
 
 def sphere_function(x):
@@ -56,7 +60,7 @@ def run_optimization_example():
 
     # Create and run optimizer
     optimizer = DESOptimizer(
-        func=rastrigin_function,
+        func=Rastrigin(dimensions=dimensions),
         initial_point=initial_point,
         lower_bounds=lower_bounds,
         upper_bounds=upper_bounds,

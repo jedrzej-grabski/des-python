@@ -97,7 +97,6 @@ class DESOptimizer:
         N = self.dimensions
         budget = self.config.budget
         lambda_ = self.config.population_size
-        minlambda = self.config.minlambda
         pathLength = self.config.pathLength
         initFt = self.config.initFt
         stopfitness = self.config.stopfitness

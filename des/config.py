@@ -15,11 +15,6 @@ def default_budget(obj: "DESConfig") -> int:
     return 10000 * obj.dimensions
 
 
-def default_minlambda(obj: "DESConfig") -> int:
-    """Default minimum population size based on dimensions."""
-    return 4 * obj.dimensions
-
-
 def default_cp(obj: "DESConfig") -> float:
     """Default evolution path decay factor based on dimensions."""
     return 1 / np.sqrt(obj.dimensions)
@@ -109,9 +104,6 @@ class DESConfig:
     population_size: int = field(init=False)
     """Population size (default: 4 * dimensions)"""
 
-    minlambda: int = field(init=False)
-    """Minimum population size (default: 4 * dimensions)"""
-
     cp: float = field(init=False)
     """Evolution path decay factor (default: 1/sqrt(dimensions))"""
 
@@ -174,7 +166,6 @@ class DESConfig:
         # Set dimension-dependent defaults
         self.budget = default_budget(self)
         self.population_size = default_population_size(self)
-        self.minlambda = default_minlambda(self)
         self.cp = default_cp(self)
         self.history = default_history(self)
 

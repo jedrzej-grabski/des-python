@@ -17,6 +17,14 @@ from des.utils.helpers import (
     delete_inf_nan,
 )
 
+from des.utils.benchmark_functions import (
+    Sphere,
+    Rastrigin,
+    Rosenbrock,
+    Schwefel,
+    Ackley,
+)
+
 __all__ = [
     "RingBuffer",
     "BoundaryHandler",
@@ -28,4 +36,9 @@ __all__ = [
     "calculate_ft",
     "process_control_parameters",
     "delete_inf_nan",
+    "Sphere",
+    "Rastrigin",
+    "Rosenbrock",
+    "Schwefel",
+    "Ackley",
 ]

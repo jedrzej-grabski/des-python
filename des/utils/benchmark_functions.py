@@ -3,7 +3,7 @@ A collection of benchmark functions for testing optimization algorithms.
 """
 
 import numpy as np
-from typing import Callable, Dict, Tuple
+from numpy.typing import NDArray
 
 
 class BenchmarkFunction:
@@ -31,7 +31,7 @@ class BenchmarkFunction:
         raise NotImplementedError("Subclasses must implement this method")
 
     @property
-    def bounds(self) -> Tuple[NDArray[np.float64], NDArray[np.float64]]:
+    def bounds(self) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
         """
         Get the bounds of the function.
 
@@ -41,7 +41,7 @@ class BenchmarkFunction:
         raise NotImplementedError("Subclasses must implement this method")
 
     @property
-    def global_minimum(self) -> Tuple[NDArray[np.float64], float]:
+    def global_minimum(self) -> tuple[NDArray[np.float64], float]:
         """
         Get the global minimum of the function.
 
@@ -62,11 +62,11 @@ class Sphere(BenchmarkFunction):
         return np.sum(x**2)
 
     @property
-    def bounds(self) -> Tuple[NDArray[np.float64], NDArray[np.float64]]:
+    def bounds(self) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
         return -100.0 * np.ones(self.dimensions), 100.0 * np.ones(self.dimensions)
 
     @property
-    def global_minimum(self) -> Tuple[NDArray[np.float64], float]:
+    def global_minimum(self) -> tuple[NDArray[np.float64], float]:
         return np.zeros(self.dimensions), 0.0
 
 
@@ -81,11 +81,11 @@ class Rosenbrock(BenchmarkFunction):
         return np.sum(100.0 * (x[1:] - x[:-1] ** 2) ** 2 + (1 - x[:-1]) ** 2)
 
     @property
-    def bounds(self) -> Tuple[NDArray[np.float64], NDArray[np.float64]]:
+    def bounds(self) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
         return -5.0 * np.ones(self.dimensions), 10.0 * np.ones(self.dimensions)
 
     @property
-    def global_minimum(self) -> Tuple[NDArray[np.float64], float]:
+    def global_minimum(self) -> tuple[NDArray[np.float64], float]:
         return np.ones(self.dimensions), 0.0
 
 
@@ -100,11 +100,11 @@ class Rastrigin(BenchmarkFunction):
         return 10 * self.dimensions + np.sum(x**2 - 10 * np.cos(2 * np.pi * x))
 
     @property
-    def bounds(self) -> Tuple[NDArray[np.float64], NDArray[np.float64]]:
+    def bounds(self) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
         return -5.12 * np.ones(self.dimensions), 5.12 * np.ones(self.dimensions)
 
     @property
-    def global_minimum(self) -> Tuple[NDArray[np.float64], float]:
+    def global_minimum(self) -> tuple[NDArray[np.float64], float]:
         return np.zeros(self.dimensions), 0.0
 
 
@@ -121,11 +121,11 @@ class Ackley(BenchmarkFunction):
         return term1 + term2 + 20.0 + np.e
 
     @property
-    def bounds(self) -> Tuple[NDArray[np.float64], NDArray[np.float64]]:
+    def bounds(self) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
         return -32.768 * np.ones(self.dimensions), 32.768 * np.ones(self.dimensions)
 
     @property
-    def global_minimum(self) -> Tuple[NDArray[np.float64], float]:
+    def global_minimum(self) -> tuple[NDArray[np.float64], float]:
         return np.zeros(self.dimensions), 0.0
 
 
@@ -140,9 +140,9 @@ class Schwefel(BenchmarkFunction):
         return 418.9829 * self.dimensions - np.sum(x * np.sin(np.sqrt(np.abs(x))))
 
     @property
-    def bounds(self) -> Tuple[NDArray[np.float64], NDArray[np.float64]]:
+    def bounds(self) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
         return -500.0 * np.ones(self.dimensions), 500.0 * np.ones(self.dimensions)
 
     @property
-    def global_minimum(self) -> Tuple[NDArray[np.float64], float]:
+    def global_minimum(self) -> tuple[NDArray[np.float64], float]:
         return 420.9687 * np.ones(self.dimensions), 0.0
