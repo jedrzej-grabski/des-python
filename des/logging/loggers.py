@@ -1,8 +1,10 @@
-from typing import Dict, Any, List, Optional
+from typing import Any, final
 import numpy as np
+from numpy.typing import NDArray
 from des.config import DESConfig
 
 
+@final
 class DiagnosticLogger:
     """
     Logger for capturing diagnostic information during optimization.
@@ -26,7 +28,7 @@ class DiagnosticLogger:
         self.population_size = population_size
 
         # Initialize data storage
-        self.logs: Dict[str, list[Any]] = {}
+        self.logs: dict[str, list[Any]] = {}
 
         # Setup log storage based on enabled diagnostics
         if config.diag_Ft:
@@ -56,13 +58,13 @@ class DiagnosticLogger:
     def log_iteration(
         self,
         ft: float,
-        fitness: np.ndarray,
+        fitness: NDArray[np.float64],
         mean_fitness: float,
-        mean_coords: np.ndarray,
-        population: np.ndarray,
+        mean_coords: NDArray[np.float64],
+        population: NDArray[np.float64],
         best_fitness: float,
         worst_fitness: float,
-        eigen_values: np.ndarray,
+        eigen_values: NDArray[np.float64],
     ) -> None:
         """
         Log diagnostic information for the current iteration.
@@ -77,6 +79,7 @@ class DiagnosticLogger:
             worst_fitness: Worst fitness in the population
             eigen_values: Eigenvalues of the population covariance matrix
         """
+
         if self.config.diag_Ft:
             self.logs["Ft"].append(ft)
 
@@ -101,7 +104,7 @@ class DiagnosticLogger:
         if self.config.diag_eigen:
             self.logs["eigen"].append(eigen_values.copy())
 
-    def get_logs(self) -> Dict[str, Any]:
+    def get_logs(self) -> dict[str, Any]:
         """
         Get all logged data.
 

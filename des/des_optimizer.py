@@ -1,11 +1,16 @@
-from typing import Dict, Any, Callable
+from typing import Any, Callable, final
 from dataclasses import dataclass
 from scipy.special import gamma
 import numpy as np
+from numpy.typing import NDArray
 import math
 
 from des.utils.ring_buffer import RingBuffer
-from des.utils.boundary_handlers import create_boundary_handler, BoundaryHandler
+from des.utils.boundary_handlers import (
+    create_boundary_handler,
+    BoundaryHandler,
+    BoundaryHandlerType,
+)
 from des.utils.helpers import (
     norm,
     success_probability,
@@ -22,15 +27,16 @@ class OptimizationResult:
     Result of an optimization run.
     """
 
-    best_solution: np.ndarray
+    best_solution: NDArray[np.float64]
     best_fitness: float
     evaluations: int
     resets: int
     convergence: int  # 0: success, 1: maxiter reached
     message: str
-    diagnostic: Dict[str, Any]
+    diagnostic: dict[str, Any]
 
 
+@final
 class DESOptimizer:
     """
     Differential Evolution with Success-History Based Parameter Adaptation.
@@ -38,12 +44,12 @@ class DESOptimizer:
 
     def __init__(
         self,
-        func: Callable[[np.ndarray], float],
-        initial_point: np.ndarray,
-        lower_bounds: float | np.ndarray | list[float] = -100.0,
-        upper_bounds: float | np.ndarray | list[float] = 100.0,
+        func: Callable[[NDArray[np.float64]], float],
+        initial_point: NDArray[np.float64],
         config: DESConfig | None = None,
-        boundary_strategy: str = "bounce_back",
+        lower_bounds: float | NDArray[np.float64] | list[float] = -100.0,
+        upper_bounds: float | NDArray[np.float64] | list[float] = 100.0,
+        boundary_strategy: BoundaryHandlerType = BoundaryHandlerType.BOUNCE_BACK,
     ) -> None:
         """
         Initialize the DES optimizer.
@@ -78,8 +84,7 @@ class DESOptimizer:
         )
 
         # Initialize configuration
-        self.config = config if config is not None else DESConfig()
-        self.config.prepare(self.dimensions)
+        self.config = config if config is not None else DESConfig(self.dimensions)
 
     def optimize(self) -> OptimizationResult:
         """
@@ -111,10 +116,11 @@ class DESOptimizer:
         # Initialize optimization variables
         self.evaluations = 0
         best_fitness = float("inf")
-        best_solution = None
+        best_solution = self.initial_point.copy()
         worst_fitness = None
         message = None
         restart_number = -1
+        iter_count = 0
 
         # Initialize logger
         logger = self._create_logger(N, max_iter, lambda_)
@@ -130,8 +136,7 @@ class DESOptimizer:
 
             # Initialize evolution parameters
             hist_head = 0
-            iter_count = 0
-            history: list[np.ndarray] = []
+            history: list[NDArray[np.float64]] = []
             Ft = initFt
 
             # Create first population
@@ -311,6 +316,7 @@ class DESOptimizer:
                     population if lamarckism else population_repaired
                 )
 
+                fitness_non_lamarckian = None
                 if not lamarckism:
                     fitness_non_lamarckian = self._apply_penalty(
                         population, population_repaired, fitness, worst_fitness
@@ -333,6 +339,7 @@ class DESOptimizer:
 
                 # Apply penalty for non-Lamarckian approach
                 if not lamarckism:
+                    assert fitness_non_lamarckian is not None
                     fitness = fitness_non_lamarckian
 
                 # Check if the mean point is better
@@ -385,7 +392,7 @@ class DESOptimizer:
         """
         return DiagnosticLogger(self.config, dimensions, max_iter, population_size)
 
-    def _evaluate(self, x: np.ndarray) -> float:
+    def _evaluate(self, x: NDArray[np.float64]) -> float:
         """
         Evaluate a single solution.
 
@@ -401,7 +408,9 @@ class DESOptimizer:
         else:
             return float("inf")
 
-    def _evaluate_population(self, population: np.ndarray) -> np.ndarray:
+    def _evaluate_population(
+        self, population: NDArray[np.float64]
+    ) -> NDArray[np.float64]:
         """
         Evaluate a population of solutions.
 
@@ -430,11 +439,11 @@ class DESOptimizer:
 
     def _apply_penalty(
         self,
-        population: np.ndarray,
-        repaired_population: np.ndarray,
-        fitness: np.ndarray,
+        population: NDArray[np.float64],
+        repaired_population: NDArray[np.float64],
+        fitness: NDArray[np.float64],
         worst_fitness: float,
-    ) -> np.ndarray:
+    ) -> NDArray[np.float64]:
         """
         Apply penalty to solutions that violated constraints.
 

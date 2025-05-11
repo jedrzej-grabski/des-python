@@ -1,6 +1,70 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import numpy as np
 import math
+from numpy.typing import NDArray
+from typing import Self, Callable
+
+
+def default_population_size(obj: "DESConfig") -> int:
+    """Default population size based on dimensions."""
+    return 4 * obj.dimensions
+
+
+def default_budget(obj: "DESConfig") -> int:
+    """Default budget based on dimensions."""
+    return 10000 * obj.dimensions
+
+
+def default_minlambda(obj: "DESConfig") -> int:
+    """Default minimum population size based on dimensions."""
+    return 4 * obj.dimensions
+
+
+def default_cp(obj: "DESConfig") -> float:
+    """Default evolution path decay factor based on dimensions."""
+    return 1 / np.sqrt(obj.dimensions)
+
+
+def default_history(obj: "DESConfig") -> int:
+    """Default history size based on dimensions."""
+    return math.ceil(6 + math.ceil(3 * np.sqrt(obj.dimensions)))
+
+
+def default_mu(obj: "DESConfig") -> int:
+    """Default number of parents based on population size."""
+    return math.floor(obj.population_size / 2)
+
+
+def default_weights(obj: "DESConfig") -> NDArray[np.float64]:
+    """Default recombination weights based on mu."""
+    weights = np.log(obj.mu + 1) - np.log(np.arange(1, obj.mu + 1))
+    return weights / np.sum(weights)
+
+
+def default_ccum(obj: "DESConfig") -> float:
+    """Default cumulation factor based on mu."""
+    return obj.mu / (obj.mu + 2)
+
+
+def default_pathratio(obj: "DESConfig") -> float:
+    """Default path ratio based on path length."""
+    return np.sqrt(obj.pathLength)
+
+
+def compute_maxit(budget: int, population_size: int) -> int:
+    """Compute maximum iterations based on budget and population size."""
+    return math.floor(budget / (population_size + 1))
+
+
+def default_ft_scale(obj: "DESConfig") -> float:
+    """Default Ft scaling factor."""
+    N = obj.dimensions
+    mueff = obj.mueff
+    return ((mueff + 2) / (N + mueff + 3)) / (
+        1
+        + 2 * max(0, np.sqrt((mueff - 1) / (N + 1)) - 1)
+        + (mueff + 2) / (N + mueff + 3)
+    )
 
 
 @dataclass
@@ -9,10 +73,14 @@ class DESConfig:
     Configuration for the DES optimizer.
 
     This class provides a structured way to configure the Differential Evolution
-    with Success-History Based Parameter Adaptation (DES) optimizer.
+    Strategy (DES) optimizer.
     """
 
-    # Algorithm parameters
+    # Required parameter
+    dimensions: int
+    """Number of dimensions in the problem"""
+
+    # Algorithm parameters with direct defaults
     Ft: float = 1.0
     """Scaling factor of difference vectors"""
 
@@ -22,44 +90,11 @@ class DESConfig:
     stopfitness: float = -float("inf")
     """Target fitness value to stop optimization when reached"""
 
-    budget: int | None = None
-    """Maximum function evaluations (default: 10000 * dimensions)"""
-
-    population_size: int | None = None  # Renamed from lambda
-    """Population size (default: 4 * dimensions)"""
-
-    minlambda: int | None = None
-    """Minimum population size (default: 4 * dimensions)"""
-
-    mu: int | None = None
-    """Number of parents (default: population_size/2)"""
-
-    weights: np.ndarray | None = None
-    """Recombination weights (computed automatically if None)"""
-
-    ccum: float | None = None
-    """Evolution path decay factor (default: mu/(mu+2))"""
-
     pathLength: int = 6
     """Size of evolution path"""
 
-    cp: float | None = None
-    """Evolution path decay factor (default: 1/sqrt(dimensions))"""
-
-    maxit: int | None = None
-    """Maximum iterations (derived from budget if None)"""
-
     c_Ft: float = 0
     """Control parameter for Ft adaptation"""
-
-    pathRatio: float | None = None
-    """Path length control reference value (default: sqrt(pathLength))"""
-
-    history: int | None = None
-    """Size of history window (default: 6 + ceil(3 * sqrt(dimensions)))"""
-
-    Ft_scale: float | None = None
-    """Scaling factor for Ft (computed automatically if None)"""
 
     tol: float = 1e-12
     """Convergence tolerance"""
@@ -67,9 +102,44 @@ class DESConfig:
     Lamarckism: bool = False
     """Whether to use Lamarckian evolution"""
 
-    # Derived parameters (computed during initialization)
-    mueff: float | None = None
+    # Parameters with dimension-dependent defaults
+    budget: int = field(init=False)
+    """Maximum function evaluations (default: 10000 * dimensions)"""
+
+    population_size: int = field(init=False)
+    """Population size (default: 4 * dimensions)"""
+
+    minlambda: int = field(init=False)
+    """Minimum population size (default: 4 * dimensions)"""
+
+    cp: float = field(init=False)
+    """Evolution path decay factor (default: 1/sqrt(dimensions))"""
+
+    history: int = field(init=False)
+    """Size of history window (default: 6 + ceil(3 * sqrt(dimensions)))"""
+
+    # Parameters with defaults dependent on other parameters
+    mu: int = field(init=False)
+    """Number of parents (default: population_size/2)"""
+
+    weights: NDArray[np.float64] = field(init=False)
+    """Recombination weights (computed automatically)"""
+
+    ccum: float = field(init=False)
+    """Evolution path decay factor (default: mu/(mu+2))"""
+
+    pathRatio: float = field(init=False)
+    """Path length control reference value (default: sqrt(pathLength))"""
+
+    maxit: int = field(init=False)
+    """Maximum iterations (derived from budget)"""
+
+    # Computed parameters
+    mueff: float = field(init=False)
     """Effective selection mass"""
+
+    Ft_scale: float = field(init=False)
+    """Scaling factor for Ft"""
 
     # Diagnostic logging options
     diag_enabled: bool = False
@@ -99,57 +169,30 @@ class DESConfig:
     diag_eigen: bool = False
     """Log eigenvalues"""
 
-    def prepare(self, dimensions: int) -> None:
-        """
-        Prepare configuration with dimension-dependent defaults.
-
-        Args:
-            dimensions: Number of dimensions in the problem
-        """
-        N = dimensions
-
+    def __post_init__(self) -> None:
+        """Calculate derived parameters that depend on other params"""
         # Set dimension-dependent defaults
-        if self.budget is None:
-            self.budget = 10000 * N
+        self.budget = default_budget(self)
+        self.population_size = default_population_size(self)
+        self.minlambda = default_minlambda(self)
+        self.cp = default_cp(self)
+        self.history = default_history(self)
 
-        if self.population_size is None:
-            self.population_size = 4 * N
+        # Set defaults dependent on other parameters
+        self.mu = default_mu(self)
+        self.weights = default_weights(self)
+        self.ccum = default_ccum(self)
+        self.pathRatio = default_pathratio(self)
 
-        if self.minlambda is None:
-            self.minlambda = 4 * N
-
-        if self.cp is None:
-            self.cp = 1 / np.sqrt(N)
-
-        if self.history is None:
-            self.history = math.ceil(6 + math.ceil(3 * np.sqrt(N)))
-
-        # Compute derived parameters
-        if self.mu is None:
-            self.mu = math.floor(self.population_size / 2)
-
-        if self.weights is None:
-            weights = np.log(self.mu + 1) - np.log(np.arange(1, self.mu + 1))
-            self.weights = weights / np.sum(weights)
-
+        # Calculate mueff from weights
         weights_sum_square = np.sum(self.weights**2)
         self.mueff = np.sum(self.weights) ** 2 / weights_sum_square
 
-        if self.ccum is None:
-            self.ccum = self.mu / (self.mu + 2)
+        # Calculate Ft_scale
+        self.Ft_scale = default_ft_scale(self)
 
-        if self.pathRatio is None:
-            self.pathRatio = np.sqrt(self.pathLength)
-
-        if self.maxit is None:
-            self.maxit = math.floor(self.budget / (self.population_size + 1))
-
-        if self.Ft_scale is None:
-            self.Ft_scale = ((self.mueff + 2) / (N + self.mueff + 3)) / (
-                1
-                + 2 * max(0, np.sqrt((self.mueff - 1) / (N + 1)) - 1)
-                + (self.mueff + 2) / (N + self.mueff + 3)
-            )
+        # Calculate maxit
+        self.maxit = compute_maxit(self.budget, self.population_size)
 
     def enable_all_diagnostics(self):
         """Enable all diagnostic logging options."""
@@ -162,7 +205,6 @@ class DESConfig:
         self.diag_bestVal = True
         self.diag_worstVal = True
         self.diag_eigen = True
-        return self
 
     def disable_all_diagnostics(self):
         """Disable all diagnostic logging options."""
@@ -175,23 +217,19 @@ class DESConfig:
         self.diag_bestVal = False
         self.diag_worstVal = False
         self.diag_eigen = False
-        return self
 
     def with_convergence_diagnostics(self):
         """Enable only diagnostics needed for convergence plots."""
         self.disable_all_diagnostics()
         self.diag_bestVal = True
-        return self
 
     def with_custom_budget(self, budget: int):
         """Set custom evaluation budget."""
         self.budget = budget
-        return self
 
     def with_population_size(self, size: int):
         """Set custom population size."""
         self.population_size = size
-        return self
 
     def with_tolerance(self, tolerance: float):
         """Set convergence tolerance."""

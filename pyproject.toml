@@ -11,7 +11,7 @@ readme = "README.md"
 license = {text = "MIT"}
 
 [tool.pdm.scripts]
-run-example = "python -m example.simple_optimization:main"
+run-example = "python -m examples.simple_optimization"
 
 [tool.pdm]
 distribution = false

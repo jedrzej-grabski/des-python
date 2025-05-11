@@ -1,9 +1,10 @@
 import numpy as np
+from numpy.typing import NDArray
 from typing import Any
 import math
 
 
-def norm(vector: np.ndarray) -> float:
+def norm(vector: NDArray[np.float64]) -> float:
     """
     Calculate the Euclidean norm (L2 norm) of a vector.
 
@@ -17,7 +18,7 @@ def norm(vector: np.ndarray) -> float:
 
 
 def success_probability(
-    benchmark_fitness: float, population_fitness: np.ndarray
+    benchmark_fitness: float, population_fitness: NDArray[np.float64]
 ) -> float:
     """
     Calculate what proportion of the population has a better fitness than the benchmark.
@@ -33,7 +34,7 @@ def success_probability(
 
 
 def calculate_ft(
-    steps_buffer: np.ndarray,
+    steps_buffer: NDArray[np.float64],
     n_dim: int,
     lambda_: int,
     path_length: int,
@@ -98,7 +99,7 @@ def process_control_parameters(
     return result
 
 
-def delete_inf_nan(x: np.ndarray) -> np.ndarray:
+def delete_inf_nan(x: NDArray[np.float64]) -> NDArray[np.float64]:
     """
     Replace any NaN or Inf values with a large finite value.
 
@@ -115,8 +116,10 @@ def delete_inf_nan(x: np.ndarray) -> np.ndarray:
 
 
 def sample_from_history(
-    history: list[np.ndarray], history_sample: np.ndarray, lambda_: int
-) -> np.ndarray:
+    history: list[NDArray[np.float64]],
+    history_sample: NDArray[np.float64],
+    lambda_: int,
+) -> NDArray[np.float64]:
     """
     Sample indices from history entries.
 

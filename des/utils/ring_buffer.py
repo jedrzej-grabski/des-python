@@ -1,5 +1,5 @@
 import numpy as np
-from typing import Sequence
+from numpy.typing import NDArray
 
 
 class RingBuffer:
@@ -20,7 +20,7 @@ class RingBuffer:
         self.index = 0
         self.is_full = False
 
-    def push(self, item: float | np.ndarray) -> None:
+    def push(self, item: float | NDArray[np.float64]) -> None:
         """
         Add an item to the buffer.
 
@@ -32,7 +32,7 @@ class RingBuffer:
         if self.index == 0:
             self.is_full = True
 
-    def push_all(self, items: Sequence[float | np.ndarray]) -> None:
+    def push_all(self, items: list[float | NDArray[np.float64]]) -> None:
         """
         Add multiple items to the buffer.
 
@@ -60,7 +60,7 @@ class RingBuffer:
         else:
             return self.data[idx]
 
-    def peek(self) -> np.ndarray:
+    def peek(self) -> NDArray[np.float64]:
         """
         Get all items currently in the buffer.
 

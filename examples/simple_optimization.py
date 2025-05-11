@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from des import DESOptimizer
 from des.config import DESConfig
+from des.utils.boundary_handlers import BoundaryHandlerType
 
 
 def sphere_function(x):
@@ -28,14 +29,14 @@ def run_optimization_example():
 
     # Initial point (center of search space)
     # initial_point = np.zeros(dimensions)
-    initial_point = np.ones(dimensions) * 3
+    initial_point = np.full(dimensions, 3.0, dtype=float)
 
     # Define bounds
     lower_bounds = -5.12
     upper_bounds = 5.12
 
     # Create a configuration object with custom settings
-    config = DESConfig()
+    config = DESConfig(dimensions=dimensions)
     # Set core parameters
     config.budget = 1000
     config.population_size = 4 * dimensions
@@ -60,7 +61,7 @@ def run_optimization_example():
         lower_bounds=lower_bounds,
         upper_bounds=upper_bounds,
         config=config,
-        boundary_strategy="bounce_back",
+        boundary_strategy=BoundaryHandlerType.BOUNCE_BACK,
     )
 
     result = optimizer.optimize()
@@ -84,7 +85,6 @@ def run_optimization_example():
         plt.title("Convergence Curve")
         plt.tight_layout()
         plt.savefig("convergence_curve.png")
-        plt.show()
 
 
 if __name__ == "__main__":
