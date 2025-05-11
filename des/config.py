@@ -2,7 +2,6 @@ from dataclasses import dataclass, field
 import numpy as np
 import math
 from numpy.typing import NDArray
-from typing import Self, Callable
 
 
 def default_population_size(obj: "DESConfig") -> int:

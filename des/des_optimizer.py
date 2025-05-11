@@ -8,12 +8,9 @@ import math
 from des.utils.ring_buffer import RingBuffer
 from des.utils.boundary_handlers import (
     create_boundary_handler,
-    BoundaryHandler,
     BoundaryHandlerType,
 )
 from des.utils.helpers import (
-    norm,
-    success_probability,
     calculate_ft,
     delete_inf_nan,
 )
