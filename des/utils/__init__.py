@@ -13,7 +13,6 @@ from des.utils.helpers import (
     norm,
     success_probability,
     calculate_ft,
-    process_control_parameters,
     delete_inf_nan,
 )
 
@@ -34,7 +33,6 @@ __all__ = [
     "norm",
     "success_probability",
     "calculate_ft",
-    "process_control_parameters",
     "delete_inf_nan",
     "Sphere",
     "Rastrigin",

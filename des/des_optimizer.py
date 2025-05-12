@@ -36,7 +36,7 @@ class OptimizationResult:
 @final
 class DESOptimizer:
     """
-    Differential Evolution with Success-History Based Parameter Adaptation.
+    Differential Evolution Strategy
     """
 
     def __init__(
@@ -176,8 +176,7 @@ class DESOptimizer:
             ft_history = np.zeros(histSize)
             pc = np.zeros((N, histSize))
 
-            stop_tol = False
-            while self.evaluations < budget and not stop_tol:
+            while self.evaluations < budget:
                 iter_count += 1
                 hist_head = (hist_head % histSize) + 1
 
@@ -192,8 +191,8 @@ class DESOptimizer:
                     mean_fitness=self._evaluate(self.boundary_handler.repair(new_mean)),
                     mean_coords=new_mean,
                     population=population,
-                    best_fitness=np.min(fitness),
-                    worst_fitness=np.max(fitness),
+                    best_fitness=best_fitness,
+                    worst_fitness=worst_fitness,
                     eigen_values=np.sort(np.linalg.eigvals(np.cov(population)))[::-1],
                 )
 
@@ -352,20 +351,13 @@ class DESOptimizer:
                     message = "Stop fitness reached."
                     break
 
-                # Termination if fitness range is very small and most of budget used
-                if (
-                    abs(np.max(fitness) - np.min(fitness)) < tol
-                    and self.evaluations > 0.8 * budget
-                ):
-                    stop_tol = True
-
         # Create result object
         result = OptimizationResult(
             best_solution=best_solution,
             best_fitness=best_fitness,
             evaluations=self.evaluations,
             resets=restart_number,
-            convergence=1 if iter_count >= max_iter else 0,
+            convergence=0 if iter_count >= max_iter else 1,
             message=message if message else "Maximum function evaluations reached.",
             diagnostic=logger.get_logs(),
         )

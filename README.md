@@ -2,7 +2,7 @@
 
 # DES Algorithm
 
-A Python implementation of the Differential Evolution with Success-History Based Parameter Adaptation algorithm.
+A Python implementation of the Differential Evolution Strategy algorithm.
 
 ## Overview
 

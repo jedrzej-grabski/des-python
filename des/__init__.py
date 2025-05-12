@@ -1,5 +1,5 @@
 """
-DES Algorithm - Differential Evolution with Success-History Based Parameter Adaptation
+DES Algorithm - Differential Evolution Strategy
 """
 
 from des.des_optimizer import DESOptimizer

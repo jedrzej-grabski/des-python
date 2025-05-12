@@ -9,27 +9,11 @@ from des.utils.benchmark_functions import (
 )
 
 
-def sphere_function(x):
-    """Simple sphere function for testing optimization."""
-    return np.sum(x**2)
-
-
-def rosenbrock_function(x):
-    """Rosenbrock function for testing optimization."""
-    return np.sum(100.0 * (x[1:] - x[:-1] ** 2) ** 2 + (1 - x[:-1]) ** 2)
-
-
-def rastrigin_function(x):
-    """Rastrigin function for testing optimization."""
-    A = 10
-    return A * len(x) + np.sum(x**2 - A * np.cos(2 * np.pi * x))
-
-
 def run_optimization_example():
     """Run a simple optimization example."""
 
     # Problem dimension
-    dimensions = 2
+    dimensions = 20
 
     # Initial point (center of search space)
     # initial_point = np.zeros(dimensions)
@@ -42,9 +26,9 @@ def run_optimization_example():
     # Create a configuration object with custom settings
     config = DESConfig(dimensions=dimensions)
     # Set core parameters
-    config.budget = 1000
+    config.budget = 80000
     config.population_size = 4 * dimensions
-    config.tol = 1e-8
+    config.tol = 1e-12
 
     # Enable diagnostics for visualization
     config.with_convergence_diagnostics()
@@ -60,7 +44,7 @@ def run_optimization_example():
 
     # Create and run optimizer
     optimizer = DESOptimizer(
-        func=Rastrigin(dimensions=dimensions),
+        func=Sphere(dimensions=dimensions),
         initial_point=initial_point,
         lower_bounds=lower_bounds,
         upper_bounds=upper_bounds,

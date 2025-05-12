@@ -80,25 +80,6 @@ def calculate_ft(
     )
 
 
-def process_control_parameters(
-    control: dict[str, Any], defaults: dict[str, Any]
-) -> dict[str, Any]:
-    """
-    Process control parameters by applying defaults when parameters are not specified.
-
-    Args:
-        control: dictionary of user-specified control parameters
-        defaults: dictionary of default parameter values
-
-    Returns:
-        dictionary of processed control parameters
-    """
-    result = {}
-    for name, default_value in defaults.items():
-        result[name] = control.get(name, default_value)
-    return result
-
-
 def delete_inf_nan(x: NDArray[np.float64]) -> NDArray[np.float64]:
     """
     Replace any NaN or Inf values with a large finite value.
