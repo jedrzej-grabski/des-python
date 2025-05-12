@@ -33,9 +33,6 @@ def run_optimization_example():
     # Enable diagnostics for visualization
     config.with_convergence_diagnostics()
 
-    # Alternative fluent API:
-    # config = DESConfig().with_custom_budget(100000).with_population_size(4 * dimensions).with_tolerance(1e-8).with_convergence_diagnostics()
-
     print("Starting DES optimization on Rastrigin function...")
     print(f"Dimensions: {dimensions}")
     print(f"Budget: {config.budget}")
