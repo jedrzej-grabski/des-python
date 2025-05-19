@@ -1,4 +1,4 @@
-from typing import Any, Callable, final
+from typing import Callable, final
 from dataclasses import dataclass
 from scipy.special import gamma
 import numpy as np
@@ -7,6 +7,7 @@ import math
 
 from des.utils.ring_buffer import RingBuffer
 from des.utils.boundary_handlers import (
+    BoundaryHandler,
     create_boundary_handler,
     BoundaryHandlerType,
 )
@@ -14,8 +15,9 @@ from des.utils.helpers import (
     calculate_ft,
     delete_inf_nan,
 )
-from des.logging.loggers import DiagnosticLogger
+from des.logging.loggers import DiagnosticLogger, LogData
 from des.config import DESConfig
+from des.utils.repair_strategy import RepairStrategy, RepairStrategyType
 
 
 @dataclass
@@ -28,9 +30,8 @@ class OptimizationResult:
     best_fitness: float
     evaluations: int
     resets: int
-    convergence: int  # 0: success, 1: maxiter reached
     message: str
-    diagnostic: dict[str, Any]
+    diagnostic: LogData
 
 
 @final
@@ -43,10 +44,11 @@ class DESOptimizer:
         self,
         func: Callable[[NDArray[np.float64]], float],
         initial_point: NDArray[np.float64],
+        boundary_handler: BoundaryHandler | None = None,
+        boundary_strategy: BoundaryHandlerType | None = None,
         config: DESConfig | None = None,
         lower_bounds: float | NDArray[np.float64] | list[float] = -100.0,
         upper_bounds: float | NDArray[np.float64] | list[float] = 100.0,
-        boundary_strategy: BoundaryHandlerType = BoundaryHandlerType.BOUNCE_BACK,
     ) -> None:
         """
         Initialize the DES optimizer.
@@ -57,7 +59,6 @@ class DESOptimizer:
             lower_bounds: Lower bounds for each dimension or a single value for all dimensions
             upper_bounds: Upper bounds for each dimension or a single value for all dimensions
             config: Configuration object for the optimizer
-            boundary_strategy: Strategy for handling boundary constraints ("bounce_back" or "clamp")
         """
         self.func = func
         self.initial_point = np.array(initial_point, dtype=float)
@@ -75,13 +76,27 @@ class DESOptimizer:
         else:
             self.upper_bounds = np.array(upper_bounds, dtype=float)
 
-        # Create boundary handler
-        self.boundary_handler = create_boundary_handler(
-            boundary_strategy, self.lower_bounds, self.upper_bounds
-        )
+        # Create boundary handler #TOASK - Wyżej robimy takie rozszerzenie granic, i na tej podstawie tworzymy handler. Już teraz jest to dopasowane w ten sposób, że przekazujemy rodzaj strategii i na tej podstawie korzystamy z handlerow.
+        # Ale możemy zrobić coś takiego, że może być albo sam przekazany,
+        if boundary_handler is not None:
+            self.boundary_handler = boundary_handler
+        else:
+            boundary_strategy = boundary_strategy or BoundaryHandlerType.CLAMP
+            self.boundary_handler = create_boundary_handler(
+                boundary_strategy, self.lower_bounds, self.upper_bounds
+            )
 
         # Initialize configuration
         self.config = config if config is not None else DESConfig(self.dimensions)
+
+        repair_strategy_type = (
+            RepairStrategyType.LAMARCKIAN
+            if self.config.Lamarckism
+            else RepairStrategyType.NON_LAMARCKIAN
+        )
+        self.repair_strategy = RepairStrategy(
+            repair_strategy_type, self.boundary_handler
+        )
 
     def optimize(self) -> OptimizationResult:
         """
@@ -96,11 +111,9 @@ class DESOptimizer:
         lambda_ = self.config.population_size
         pathLength = self.config.pathLength
         initFt = self.config.initFt
-        stopfitness = self.config.stopfitness
         histSize = self.config.history
         c_Ft = self.config.c_Ft
         cp = self.config.cp
-        tol = self.config.tol
         max_iter = self.config.maxit
         lamarckism = self.config.Lamarckism
         weights = self.config.weights
@@ -278,8 +291,8 @@ class DESOptimizer:
                 # Generate new population
                 population = (
                     new_mean.reshape(-1, 1)
-                    + Ft * diffs
-                    + tol
+                    + Ft
+                    * diffs
                     * (1 - 2 / N**2) ** (iter_count / 2)
                     * np.random.normal(size=diffs.shape)
                     / chi_N
@@ -289,8 +302,8 @@ class DESOptimizer:
 
                 # Check constraints violations and repair if necessary
                 population_temp = population.copy()
-                population_repaired = np.apply_along_axis(
-                    self.boundary_handler.repair, 0, population
+                population, population_repaired, counter_repaired = (
+                    self.repair_strategy.repair_population(population)
                 )
 
                 # Count repaired individuals
@@ -311,9 +324,8 @@ class DESOptimizer:
                     population if lamarckism else population_repaired
                 )
 
-                fitness_non_lamarckian = None
                 if not lamarckism:
-                    fitness_non_lamarckian = self._apply_penalty(
+                    fitness = self.repair_strategy.apply_fitness_strategy(
                         population, population_repaired, fitness, worst_fitness
                     )
 
@@ -321,10 +333,8 @@ class DESOptimizer:
                 best_idx = np.argmin(fitness)
                 if fitness[best_idx] < best_fitness:
                     best_fitness = fitness[best_idx]
-                    best_solution = (
-                        population[:, best_idx]
-                        if lamarckism
-                        else population_repaired[:, best_idx]
+                    best_solution = self.repair_strategy.get_best_solution(
+                        population, population_repaired, int(best_idx)
                     )
 
                 # Check worst fitness
@@ -332,10 +342,9 @@ class DESOptimizer:
                 if fitness[worst_idx] > worst_fitness:
                     worst_fitness = fitness[worst_idx]
 
-                # Apply penalty for non-Lamarckian approach
-                if not lamarckism:
-                    assert fitness_non_lamarckian is not None
-                    fitness = fitness_non_lamarckian
+                fitness = self.repair_strategy.apply_fitness_strategy(
+                    population, population_repaired, fitness, worst_fitness
+                )
 
                 # Check if the mean point is better
                 cum_mean = 0.8 * cum_mean + 0.2 * new_mean
@@ -346,24 +355,19 @@ class DESOptimizer:
                     best_fitness = mean_fitness
                     best_solution = cum_mean_repaired
 
-                # Check termination conditions
-                if fitness[0] <= stopfitness:
-                    message = "Stop fitness reached."
-                    break
-
         # Create result object
         result = OptimizationResult(
             best_solution=best_solution,
             best_fitness=best_fitness,
             evaluations=self.evaluations,
             resets=restart_number,
-            convergence=0 if iter_count >= max_iter else 1,
             message=message if message else "Maximum function evaluations reached.",
             diagnostic=logger.get_logs(),
         )
 
         return result
 
+    # TOASK - Tutaj tak samo, konfiguracja jest za pomocą configu, więc nie ma potrzeby duplikowania tej konifguracji i przekazywania parametru
     def _create_logger(
         self, dimensions: int, max_iter: int, population_size: int
     ) -> DiagnosticLogger:
