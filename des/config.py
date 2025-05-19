@@ -70,19 +70,14 @@ class DESConfig:
     Strategy (DES) optimizer.
     """
 
-    # Required parameter
     dimensions: int
     """Number of dimensions in the problem"""
 
-    # Algorithm parameters with direct defaults
     Ft: float = 1.0
     """Scaling factor of difference vectors"""
 
     initFt: float = 1.0
     """Initial scaling factor"""
-
-    stopfitness: float = -float("inf")
-    """Target fitness value to stop optimization when reached"""
 
     pathLength: int = 6
     """Size of evolution path"""
@@ -90,40 +85,34 @@ class DESConfig:
     c_Ft: float = 0
     """Control parameter for Ft adaptation"""
 
-    tol: float = 1e-12
-    """Convergence tolerance"""
-
     Lamarckism: bool = False
     """Whether to use Lamarckian evolution"""
 
-    # Parameters with dimension-dependent defaults
     budget: int = field(init=False)
-    """Maximum function evaluations (default: 10000 * dimensions)"""
 
     population_size: int = field(init=False)
-    """Population size (default: 4 * dimensions)"""
 
     cp: float = field(init=False)
-    """Evolution path decay factor (default: 1/sqrt(dimensions))"""
+    """Evolution path decay factor"""
 
     history: int = field(init=False)
-    """Size of history window (default: 6 + ceil(3 * sqrt(dimensions)))"""
+    """Size of history window"""
 
     # Parameters with defaults dependent on other parameters
     mu: int = field(init=False)
-    """Number of parents (default: population_size/2)"""
+    """Number of parents"""
 
     weights: NDArray[np.float64] = field(init=False)
-    """Recombination weights (computed automatically)"""
+    """Recombination weights"""
 
     ccum: float = field(init=False)
-    """Evolution path decay factor (default: mu/(mu+2))"""
+    """Evolution path decay factor"""
 
     pathRatio: float = field(init=False)
-    """Path length control reference value (default: sqrt(pathLength))"""
+    """Path length control reference value"""
 
     maxit: int = field(init=False)
-    """Maximum iterations (derived from budget)"""
+    """Maximum iterations"""
 
     # Computed parameters
     mueff: float = field(init=False)
@@ -220,7 +209,3 @@ class DESConfig:
     def with_population_size(self, size: int):
         """Set custom population size."""
         self.population_size = size
-
-    def with_tolerance(self, tolerance: float):
-        """Set convergence tolerance."""
-        self.tol = tolerance
