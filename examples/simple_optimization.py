@@ -15,33 +15,31 @@ def run_optimization_example():
     # Problem dimension
     dimensions = 20
 
-    # Initial point (center of search space)
-    # initial_point = np.zeros(dimensions)
-    initial_point = np.full(dimensions, 3.0, dtype=float)
-
     # Define bounds
     lower_bounds = -5.12
     upper_bounds = 5.12
 
+    # initial_point = np.zeros(dimensions)
+    # initial_point = np.full(dimensions, 3.0, dtype=float)
+    initial_point = np.random.uniform(lower_bounds, upper_bounds, size=dimensions)
+
     # Create a configuration object with custom settings
     config = DESConfig(dimensions=dimensions)
     # Set core parameters
-    config.budget = 80000
+    config.budget = 10000
     config.population_size = 4 * dimensions
-    config.tol = 1e-12
 
     # Enable diagnostics for visualization
     config.with_convergence_diagnostics()
 
-    print("Starting DES optimization on Rastrigin function...")
+    print("Starting DES optimization...")
     print(f"Dimensions: {dimensions}")
     print(f"Budget: {config.budget}")
     print(f"Population size: {config.population_size}")
-    print(f"Tolerance: {config.tol}")
 
     # Create and run optimizer
     optimizer = DESOptimizer(
-        func=Sphere(dimensions=dimensions),
+        func=Rastrigin(dimensions=dimensions),
         initial_point=initial_point,
         lower_bounds=lower_bounds,
         upper_bounds=upper_bounds,
@@ -53,17 +51,14 @@ def run_optimization_example():
 
     # Print results
     print("\nOptimization completed:")
-    print(f"Best fitness: {result.best_fitness}")
+    print(f"Best fitness: {result.best_fitness:.20f}")
     print(f"Function evaluations: {result.evaluations}")
-    print(
-        f"Convergence status: {'Converged' if result.convergence == 0 else 'Maximum iterations reached'}"
-    )
     print(f"Message: {result.message}")
 
     # Plot convergence curve if diagnostics were enabled
-    if "bestVal" in result.diagnostic:
+    if result.diagnostic.bestVal is not None:
         plt.figure(figsize=(10, 6))
-        plt.semilogy(result.diagnostic["bestVal"])
+        plt.semilogy(result.diagnostic.bestVal)
         plt.grid(True)
         plt.xlabel("Iteration")
         plt.ylabel("Best Fitness (log scale)")
