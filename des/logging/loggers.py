@@ -1,7 +1,47 @@
-from typing import Any, final
+from typing import Any, final, Optional
 import numpy as np
 from numpy.typing import NDArray
 from des.config import DESConfig
+
+
+@final
+class LogData:
+    """Container for diagnostic log data."""
+
+    def __init__(self) -> None:
+        """Initialize empty log containers."""
+        self.Ft: list[float] = []
+        self.value: list[NDArray[np.float64]] = []
+        self.mean: list[float] = []
+        self.meanCords: list[NDArray[np.float64]] = []
+        self.pop: list[NDArray[np.float64]] = []
+        self.bestVal: list[float] = []
+        self.worstVal: list[float] = []
+        self.eigen: list[NDArray[np.float64]] = []
+
+    def clear(self) -> None:
+        """Reset all log data."""
+        self.Ft = []
+        self.value = []
+        self.mean = []
+        self.meanCords = []
+        self.pop = []
+        self.bestVal = []
+        self.worstVal = []
+        self.eigen = []
+
+    def to_dict(self) -> dict[str, list[Any]]:
+        """Convert log data to dictionary format."""
+        return {
+            "Ft": self.Ft,
+            "value": self.value,
+            "mean": self.mean,
+            "meanCords": self.meanCords,
+            "pop": self.pop,
+            "bestVal": self.bestVal,
+            "worstVal": self.worstVal,
+            "eigen": self.eigen,
+        }
 
 
 @final
@@ -28,32 +68,7 @@ class DiagnosticLogger:
         self.population_size = population_size
 
         # Initialize data storage
-        self.logs: dict[str, list[Any]] = {}
-
-        # Setup log storage based on enabled diagnostics
-        if config.diag_Ft:
-            self.logs["Ft"] = []
-
-        if config.diag_value:
-            self.logs["value"] = []
-
-        if config.diag_mean:
-            self.logs["mean"] = []
-
-        if config.diag_meanCords:
-            self.logs["meanCords"] = []
-
-        if config.diag_pop:
-            self.logs["pop"] = []
-
-        if config.diag_bestVal:
-            self.logs["bestVal"] = []
-
-        if config.diag_worstVal:
-            self.logs["worstVal"] = []
-
-        if config.diag_eigen:
-            self.logs["eigen"] = []
+        self.logs = LogData()
 
     def log_iteration(
         self,
@@ -81,39 +96,47 @@ class DiagnosticLogger:
         """
 
         if self.config.diag_Ft:
-            self.logs["Ft"].append(ft)
+            self.logs.Ft.append(ft)
 
         if self.config.diag_value:
-            self.logs["value"].append(fitness.copy())
+            self.logs.value.append(fitness.copy())
 
         if self.config.diag_mean:
-            self.logs["mean"].append(mean_fitness)
+            self.logs.mean.append(mean_fitness)
 
         if self.config.diag_meanCords:
-            self.logs["meanCords"].append(mean_coords.copy())
+            self.logs.meanCords.append(mean_coords.copy())
 
         if self.config.diag_pop:
-            self.logs["pop"].append(population.copy())
+            self.logs.pop.append(population.copy())
 
         if self.config.diag_bestVal:
-            self.logs["bestVal"].append(best_fitness)
+            self.logs.bestVal.append(best_fitness)
 
         if self.config.diag_worstVal:
-            self.logs["worstVal"].append(worst_fitness)
+            self.logs.worstVal.append(worst_fitness)
 
         if self.config.diag_eigen:
-            self.logs["eigen"].append(eigen_values.copy())
+            self.logs.eigen.append(eigen_values.copy())
 
-    def get_logs(self) -> dict[str, Any]:
+    def get_logs(self) -> LogData:
         """
         Get all logged data.
 
         Returns:
-            Dictionary with logged diagnostic information
+            Object containing logged diagnostic information
         """
         return self.logs
 
+    def get_logs_dict(self) -> dict[str, Any]:
+        """
+        Get all logged data as a dictionary.
+
+        Returns:
+            Dictionary with logged diagnostic information
+        """
+        return self.logs.to_dict()
+
     def clear_logs(self) -> None:
         """Clear all logged data."""
-        for key in self.logs:
-            self.logs[key] = []
+        self.logs.clear()
