@@ -3,25 +3,22 @@ import matplotlib.pyplot as plt
 from des import DESOptimizer
 from des.config import DESConfig
 from des.utils.boundary_handlers import BoundaryHandlerType
-from des.utils.benchmark_functions import (
-    Sphere,
-    Rastrigin,
-)
+from des.utils.benchmark_functions import Sphere, Rastrigin, Rosenbrock
 
 
 def run_optimization_example():
     """Run a simple optimization example."""
 
     # Problem dimension
-    dimensions = 20
+    dimensions = 100
 
     # Define bounds
     lower_bounds = -5.12
     upper_bounds = 5.12
 
     # initial_point = np.zeros(dimensions)
-    # initial_point = np.full(dimensions, 3.0, dtype=float)
-    initial_point = np.random.uniform(lower_bounds, upper_bounds, size=dimensions)
+    initial_point = np.full(dimensions, 3.0, dtype=float)
+    # initial_point = np.random.uniform(lower_bounds, upper_bounds, size=dimensions)
 
     # Create a configuration object with custom settings
     config = DESConfig(dimensions=dimensions)
@@ -36,10 +33,11 @@ def run_optimization_example():
     print(f"Dimensions: {dimensions}")
     print(f"Budget: {config.budget}")
     print(f"Population size: {config.population_size}")
+    print(f"Initial point value: {Sphere(dimensions)(initial_point):.20f}")
 
     # Create and run optimizer
     optimizer = DESOptimizer(
-        func=Rastrigin(dimensions=dimensions),
+        func=Sphere(dimensions=dimensions),
         initial_point=initial_point,
         lower_bounds=lower_bounds,
         upper_bounds=upper_bounds,
@@ -54,6 +52,8 @@ def run_optimization_example():
     print(f"Best fitness: {result.best_fitness:.20f}")
     print(f"Function evaluations: {result.evaluations}")
     print(f"Message: {result.message}")
+    print(len(result.diagnostic.bestVal))
+    print(result.diagnostic.bestVal)
 
     # Plot convergence curve if diagnostics were enabled
     if result.diagnostic.bestVal is not None:
