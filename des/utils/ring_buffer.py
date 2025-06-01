@@ -1,11 +1,13 @@
 import numpy as np
 from numpy.typing import NDArray
+from collections import deque
+from typing import List, Union
 
 
 class RingBuffer:
     """
     A fixed-size buffer that overwrites oldest data when full.
-    Emulates the ringbuffer functionality from R.
+    Implements ring buffer functionality using collections.deque.
     """
 
     def __init__(self, size: int) -> None:
@@ -16,8 +18,7 @@ class RingBuffer:
             size: Maximum number of elements in the buffer
         """
         self.size = size
-        self.data = np.zeros(size)
-        self.index = 0
+        self.buffer = deque(maxlen=size)
         self.is_full = False
 
     def push(self, item: float | NDArray[np.float64]) -> None:
@@ -25,12 +26,12 @@ class RingBuffer:
         Add an item to the buffer.
 
         Args:
-            item: The value to add to the buffer
+            item: The value to add to the bufferW
         """
-        self.data[self.index] = item
-        self.index = (self.index + 1) % self.size
-        if self.index == 0:
+        if len(self.buffer) == self.size:
             self.is_full = True
+
+        self.buffer.append(item)
 
     def push_all(self, items: list[float | NDArray[np.float64]]) -> None:
         """
@@ -55,10 +56,7 @@ class RingBuffer:
         if idx < 0 or idx >= self.capacity():
             raise IndexError("Buffer index out of range")
 
-        if self.is_full:
-            return self.data[(self.index + idx) % self.size]
-        else:
-            return self.data[idx]
+        return self.buffer[idx]
 
     def peek(self) -> NDArray[np.float64]:
         """
@@ -67,10 +65,7 @@ class RingBuffer:
         Returns:
             Array containing all buffer values in order
         """
-        if self.is_full:
-            return np.concatenate([self.data[self.index :], self.data[: self.index]])
-        else:
-            return self.data[: self.index]
+        return np.array(self.buffer)
 
     def capacity(self) -> int:
         """
@@ -79,14 +74,13 @@ class RingBuffer:
         Returns:
             The number of items currently in the buffer
         """
-        return self.size if self.is_full else self.index
+        return len(self.buffer)
 
     def clear(self) -> None:
         """
         Clear the buffer.
         """
-        self.data = np.zeros(self.size)
-        self.index = 0
+        self.buffer.clear()
         self.is_full = False
 
     def is_empty(self) -> bool:
@@ -96,4 +90,4 @@ class RingBuffer:
         Returns:
             True if the buffer is empty, False otherwise
         """
-        return not self.is_full and self.index == 0
+        return len(self.buffer) == 0
