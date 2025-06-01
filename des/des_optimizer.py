@@ -75,8 +75,6 @@ class DESOptimizer:
         else:
             self.upper_bounds = np.array(upper_bounds, dtype=float)
 
-        # Create boundary handler #TOASK - Wyżej robimy takie rozszerzenie granic, i na tej podstawie tworzymy handler. Już teraz jest to dopasowane w ten sposób, że przekazujemy rodzaj strategii i na tej podstawie korzystamy z handlerow.
-        # Ale możemy zrobić coś takiego, że może być albo sam przekazany,
         if boundary_handler is not None:
             self.boundary_handler = boundary_handler
         else:
@@ -358,7 +356,6 @@ class DESOptimizer:
 
         return result
 
-    # TOASK - Tutaj tak samo, konfiguracja jest za pomocą configu, więc nie ma potrzeby duplikowania tej konifguracji i przekazywania parametru
     def _create_logger(
         self, dimensions: int, max_iter: int, population_size: int
     ) -> DiagnosticLogger:
