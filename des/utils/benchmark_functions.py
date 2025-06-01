@@ -5,6 +5,8 @@ A collection of benchmark functions for testing optimization algorithms.
 import numpy as np
 from numpy.typing import NDArray
 
+from opfunu.cec_based import CecBenchmark, cec2017
+
 
 class BenchmarkFunction:
     """Base class for benchmark functions."""
@@ -146,3 +148,56 @@ class Schwefel(BenchmarkFunction):
     @property
     def global_minimum(self) -> tuple[NDArray[np.float64], float]:
         return 420.9687 * np.ones(self.dimensions), 0.0
+
+
+class CEC17Function(BenchmarkFunction):
+
+    def __init__(self, dimensions: int, function_id: int):
+        """
+        Initialize a CEC benchmark function.
+
+        Args:
+            dimensions: Number of dimensions for the function
+            function_id: ID of the CEC function to use
+        """
+        super().__init__(dimensions)
+
+        if function_id < 1 or function_id > 28:
+            raise ValueError("Function ID must be between 1 and 28.")
+
+        self.function_id = function_id
+
+        fname = f"F{function_id}2017"
+        self.func = getattr(cec2017, fname)(dimensions)
+
+    def __call__(self, x: NDArray[np.float64]) -> float:
+        """
+        Evaluate the CEC function at point x.
+
+        Args:
+            x: Input vector of length self.dimensions
+
+        Returns:
+            Function value at x
+        """
+        return self.func.evaluate(x)
+
+    @property
+    def bounds(self) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
+        """
+        Get the bounds of the CEC function.
+
+        Returns:
+            Tuple of (lower_bounds, upper_bounds)
+        """
+        return self.func.lower, self.func.upper
+
+    @property
+    def global_minimum(self) -> tuple[NDArray[np.float64], float]:
+        """
+        Get the global minimum of the CEC function.
+
+        Returns:
+            Tuple of (optimal_solution, optimal_value)
+        """
+        return self.func.optimal_solution, self.func.optimal_value
