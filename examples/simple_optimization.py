@@ -4,27 +4,39 @@ from des import DESOptimizer
 from des.config import DESConfig
 from des.utils.boundary_handlers import BoundaryHandlerType
 from des.utils.benchmark_functions import Sphere, Rastrigin, Rosenbrock, CEC17Function
+from des.utils.initial_point_generator import (
+    InitialPointGenerator,
+    InitialPointGeneratorType,
+)
+
+import warnings
+
+warnings.filterwarnings("ignore", category=SyntaxWarning, module="opfunu")
 
 
 def run_optimization_example():
     """Run a simple optimization example."""
 
-    # Problem dimension
-    dimensions = 80
+    dimensions = 8
 
     # opt_func = CEC17Function(dimensions=dimensions, function_id=3)
     opt_func = Sphere(dimensions=dimensions)
+
     # Define bounds
     lower_bounds = -5.12
     upper_bounds = 5.12
 
-    # initial_point = np.zeros(dimensions)
-    initial_point = np.full(dimensions, 0.1, dtype=float)
-    # initial_point = np.random.uniform(lower_bounds, upper_bounds, size=dimensions)
-    # implement gen initial with pre listed strategies
+    initial_point_generator = InitialPointGenerator(
+        strategy=InitialPointGeneratorType.NORMAL,
+        dimensions=dimensions,
+        lower_bounds=lower_bounds,
+        upper_bounds=upper_bounds,
+    )
 
+    initial_point = initial_point_generator.generate()
     # Create a configuration object with custom settings
     config = DESConfig(dimensions=dimensions)
+
     # Set core parameters
     config.budget = 1000 * dimensions
     config.population_size = 4 * dimensions
@@ -37,7 +49,7 @@ def run_optimization_example():
     print(f"Dimensions: {dimensions}")
     print(f"Budget: {config.budget}")
     print(f"Population size: {config.population_size}")
-    print(f"Initial point value: {Sphere(dimensions)(initial_point):.20f}")
+    print(f"Initial point value: {opt_func(initial_point):.20f}")
 
     # Create and run optimizer
     optimizer = DESOptimizer(

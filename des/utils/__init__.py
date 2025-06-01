@@ -24,6 +24,11 @@ from des.utils.benchmark_functions import (
     Ackley,
 )
 
+from des.utils.initial_point_generator import (
+    InitialPointGenerator,
+    InitialPointGeneratorType,
+)
+
 __all__ = [
     "RingBuffer",
     "BoundaryHandler",
@@ -39,4 +44,6 @@ __all__ = [
     "Rosenbrock",
     "Schwefel",
     "Ackley",
+    "InitialPointGenerator",
+    "InitialPointGeneratorType",
 ]

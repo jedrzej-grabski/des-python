@@ -201,7 +201,11 @@ class DESOptimizer:
                 population=population,
                 best_fitness=best_fitness,
                 worst_fitness=worst_fitness,
-                eigen_values=np.sort(np.linalg.eigvals(np.cov(population)))[::-1],
+                eigen_values=np.sort(
+                    np.linalg.eigvals(
+                        np.cov(population)
+                    )  # pyright: ignore[reportArgumentType]
+                )[::-1],
             )
 
             # Select best mu individuals
