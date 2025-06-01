@@ -80,7 +80,7 @@ def run_optimization_example():
         plt.ylabel("Best Fitness (log scale)")
         plt.title("Convergence Curve")
         plt.tight_layout()
-        plt.savefig("convergence_curve.png")
+        plt.savefig("graphs/convergence_curve.png")
 
     if result.diagnostic.mean is not None:
         plt.figure(figsize=(10, 6))
@@ -90,7 +90,7 @@ def run_optimization_example():
         plt.ylabel("Mean fitness value (log scale)")
         plt.title("Mean fitness")
         plt.tight_layout()
-        plt.savefig("fitness_curve.png")
+        plt.savefig("graphs/fitness_curve.png")
 
 
 if __name__ == "__main__":
