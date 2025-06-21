@@ -78,7 +78,10 @@ class InitialPointGenerator:
             self.upper_bounds, np.ndarray
         ), "Bounds must be numpy arrays"
 
-        if self.initial_point and len(self.initial_point) == self.dimensions:
+        if (
+            self.initial_point is not None
+            and len(self.initial_point) == self.dimensions
+        ):
             mean = np.array(self.initial_point, dtype=np.float64)
         else:
             mean = np.array(
@@ -120,9 +123,10 @@ class InitialPointGenerator:
         Returns:
             Array of floats from the predefined initial point
         """
-        if not self.initial_point:
+        if self.initial_point is None:
             raise ValueError("Custom initial point not provided")
-        if len(self.initial_point) != self.dimensions:
+
+        elif len(self.initial_point) != self.dimensions:
             raise ValueError(
                 f"Initial point length {len(self.initial_point)} does not match dimensions {self.dimensions}"
             )
