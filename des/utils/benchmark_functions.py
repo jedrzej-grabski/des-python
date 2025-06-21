@@ -5,7 +5,7 @@ A collection of benchmark functions for testing optimization algorithms.
 import numpy as np
 from numpy.typing import NDArray
 
-from opfunu.cec_based import CecBenchmark, cec2017
+from opfunu.cec_based import cec2017
 
 
 class BenchmarkFunction:

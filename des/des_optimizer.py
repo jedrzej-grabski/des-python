@@ -130,11 +130,7 @@ class DESOptimizer:
         # Initialize logger
         logger = self._create_logger(N, max_iter, lambda_)
 
-        # Set up optimization parameters
-        mu = math.floor(lambda_ / 2)
-        weights = np.log(mu + 1) - np.log(np.arange(1, mu + 1))
-        weights = weights / np.sum(weights)
-        weights_pop = np.log(lambda_ + 1) - np.log(np.arange(1, lambda_ + 1))
+        weights_pop = np.log(lambda_) - np.log(np.arange(1, lambda_))
         weights_pop = weights_pop / np.sum(weights_pop)
 
         # Initialize evolution parameters
@@ -142,15 +138,27 @@ class DESOptimizer:
         history: list[NDArray[np.float64]] = []
         Ft = initFt
 
+        # # Create first population
+        # population = np.random.uniform(
+        #     0.8 * self.lower_bounds[:, None],
+        #     0.8 * self.upper_bounds[:, None],
+        #     size=(N, lambda_),
+        # )
         # Create first population
-        population = np.random.uniform(
-            0.8 * self.lower_bounds[:, None],
-            0.8 * self.upper_bounds[:, None],
-            size=(N, lambda_),
+
+        sigma = (self.upper_bounds - self.lower_bounds) / 6
+        population = np.random.normal(
+            loc=self.initial_point, scale=sigma, size=(lambda_, N)
         )
+
+        population = np.array(
+            [self.boundary_handler.repair(individual) for individual in population]
+        )
+
         cumulative_mean = (self.upper_bounds + self.lower_bounds) / 2
-        population_repaired = np.apply_along_axis(
-            self.boundary_handler.repair, 0, population
+
+        population_repaired = np.array(
+            [self.boundary_handler.repair(individual) for individual in population]
         )
 
         if lamarckism:
@@ -166,7 +174,9 @@ class DESOptimizer:
         worst_fitness = np.max(fitness)
 
         # Store population and selection means
-        pop_mean = np.sum(population * weights_pop.reshape(1, -1), axis=1)
+        pop_mean = np.mean(
+            population, axis=0
+        )  # Changed to compute mean across individuals
         mu_mean = new_mean
 
         # Initialize matrices for creating diffs
@@ -198,25 +208,35 @@ class DESOptimizer:
                 fitness=fitness,
                 mean_fitness=self._evaluate(self.boundary_handler.repair(new_mean)),
                 mean_coords=new_mean,
-                population=population,
+                population=population,  # Transpose for logging if logger expects (N, lambda_) shape
                 best_fitness=best_fitness,
                 worst_fitness=worst_fitness,
-                eigen_values=np.sort(np.linalg.eigvals(np.cov(population)))[::-1],
+                eigen_values=np.sort(
+                    np.linalg.eigvals(
+                        np.cov(population.T)  # Transpose for covariance calculation
+                    )
+                )[::-1],
             )
 
             # Select best mu individuals
             selection = np.argsort(fitness)[:mu]
-            selected_points = population[:, selection]
+            selected_points = population[
+                selection
+            ]  # Changed from population[:, selection]
 
             # Save selected population in history buffer
             if len(history) < histSize:
-                history.append(selected_points * hist_norm / Ft)
+                history.append(
+                    selected_points.T * hist_norm / Ft
+                )  # Transpose to match expected shape
             else:
-                history[hist_head - 1] = selected_points * hist_norm / Ft
+                history[hist_head - 1] = selected_points.T * hist_norm / Ft
 
             # Calculate weighted mean of selected points
             old_mean = new_mean.copy()
-            new_mean = np.sum(selected_points * weights.reshape(1, -1), axis=1)
+            new_mean = np.sum(
+                selected_points * weights.reshape(-1, 1), axis=0
+            )  # Changed axis and reshape
 
             # Write to buffers
             mu_mean = new_mean
@@ -248,9 +268,7 @@ class DESOptimizer:
 
             # Update parameters
             if hist_head == 1:
-                pc[:, hist_head - 1] = (1 - cp) * np.zeros(N) / np.sqrt(N) + np.sqrt(
-                    mu * cp * (2 - cp)
-                ) * step
+                pc[:, hist_head - 1] = np.sqrt(mu) * step
             else:
                 pc[:, hist_head - 1] = (1 - cp) * pc[:, hist_head - 2] + np.sqrt(
                     mu * cp * (2 - cp)
@@ -282,11 +300,10 @@ class DESOptimizer:
 
             # Generate new population
             population = (
-                new_mean.reshape(-1, 1)
-                + Ft
-                * diffs
-                * (1 - 2 / N**2) ** (iter_count / 2)
-                * np.random.normal(size=diffs.shape)
+                new_mean.reshape(1, -1)  # Changed to row vector
+                + Ft * diffs.T  # Transpose diffs
+                + (1 - 2 / N**2) ** (iter_count / 2)
+                * np.random.normal(size=(lambda_, N))  # Changed shape
                 / chi_N
             )
 
@@ -300,14 +317,18 @@ class DESOptimizer:
 
             # Count repaired individuals
             counter_repaired = 0
-            for i in range(population.shape[1]):
-                if not np.array_equal(population_temp[:, i], population_repaired[:, i]):
+            for i in range(population.shape[0]):
+                if not np.array_equal(
+                    population[i], population_repaired[i]
+                ):  # Changed indexing
                     counter_repaired += 1
 
             if lamarckism:
                 population = population_repaired
 
-            pop_mean = np.sum(population * weights_pop.reshape(1, -1), axis=1)
+            pop_mean = np.mean(
+                population, axis=0
+            )  # Changed to compute mean across individuals
 
             # Evaluate population
             fitness = self._evaluate_population(
@@ -370,7 +391,15 @@ class DESOptimizer:
         Returns:
             Configured DiagnosticLogger instance
         """
-        return DiagnosticLogger(self.config, dimensions, max_iter, population_size)
+        return DiagnosticLogger(
+            self.config,
+            dimensions,
+            max_iter,
+            population_size,
+            self.func,
+            self.lower_bounds,
+            self.upper_bounds,
+        )
 
     def _evaluate(self, x: NDArray[np.float64]) -> float:
         """
@@ -395,22 +424,22 @@ class DESOptimizer:
         Evaluate a population of solutions.
 
         Args:
-            population: Matrix of solution vectors (each column is a solution)
+            population: Matrix of solution vectors (each row is a solution)
 
         Returns:
             Array of fitness values
         """
-        fitness = np.zeros(population.shape[1])
+        fitness = np.zeros(population.shape[0])
         budget_left = self.config.budget - self.evaluations
 
-        if budget_left >= population.shape[1]:
+        if budget_left >= population.shape[0]:
             # Evaluate entire population
-            for i in range(population.shape[1]):
-                fitness[i] = self._evaluate(population[:, i])
+            for i in range(population.shape[0]):
+                fitness[i] = self._evaluate(population[i])
         else:
             # Evaluate only what budget allows
             for i in range(budget_left):
-                fitness[i] = self._evaluate(population[:, i])
+                fitness[i] = self._evaluate(population[i])
 
             # Fill rest with infinity
             fitness[budget_left:] = float("inf")
