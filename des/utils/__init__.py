@@ -29,6 +29,8 @@ from des.utils.initial_point_generator import (
     InitialPointGeneratorType,
 )
 
+from des.utils.des_plotter import DESPlotter
+
 __all__ = [
     "RingBuffer",
     "BoundaryHandler",
@@ -46,4 +48,5 @@ __all__ = [
     "Ackley",
     "InitialPointGenerator",
     "InitialPointGeneratorType",
+    "DESPlotter",
 ]
