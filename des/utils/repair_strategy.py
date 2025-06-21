@@ -35,7 +35,7 @@ class RepairStrategy:
         Repair the population according to the selected strategy.
 
         Args:
-            population: The population to repair
+            population: The population to repair (shape: lambda_, N)
 
         Returns:
             Tuple of (effective_population, repaired_population, repair_count)
@@ -44,14 +44,14 @@ class RepairStrategy:
             - repair_count: Number of individuals that needed repair
         """
         population_temp = population.copy()
-        population_repaired = np.apply_along_axis(
-            self.boundary_handler.repair, 0, population
+        population_repaired = np.array(
+            [self.boundary_handler.repair(individual) for individual in population]
         )
 
         # Count repaired individuals
         counter_repaired = 0
-        for i in range(population.shape[1]):
-            if not np.array_equal(population_temp[:, i], population_repaired[:, i]):
+        for i in range(population.shape[0]):
+            if not np.array_equal(population_temp[i], population_repaired[i]):
                 counter_repaired += 1
 
         # In Lamarckian approach, we replace the original population with repaired one
@@ -96,19 +96,15 @@ class RepairStrategy:
     ) -> NDArray[np.float64]:
         """Apply penalty to solutions that violated constraints."""
         # Find individuals that needed repair
-        needs_repair = np.zeros(population.shape[1], dtype=bool)
-        for i in range(population.shape[1]):
-            needs_repair[i] = not np.array_equal(
-                population[:, i], repaired_population[:, i]
-            )
+        needs_repair = np.zeros(population.shape[0], dtype=bool)
+        for i in range(population.shape[0]):
+            needs_repair[i] = not np.array_equal(population[i], repaired_population[i])
 
         # Calculate squared distances between original and repaired
-        sq_distances = np.zeros(population.shape[1])
-        for i in range(population.shape[1]):
+        sq_distances = np.zeros(population.shape[0])
+        for i in range(population.shape[0]):
             if needs_repair[i]:
-                sq_distances[i] = np.sum(
-                    (population[:, i] - repaired_population[:, i]) ** 2
-                )
+                sq_distances[i] = np.sum((population[i] - repaired_population[i]) ** 2)
 
         # Apply penalty based on distance
         penalized_fitness = fitness.copy()
@@ -124,7 +120,7 @@ class RepairStrategy:
     ) -> NDArray[np.float64]:
         """Get the best solution based on strategy."""
         return (
-            population[:, best_idx]
+            population[best_idx]
             if self.is_lamarckian()
-            else repaired_population[:, best_idx]
+            else repaired_population[best_idx]
         )
