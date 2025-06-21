@@ -1,34 +1,38 @@
-from typing import Any, final, Optional
+from ast import Call
+from typing import Any, Callable, final, Optional
 import numpy as np
 from numpy.typing import NDArray
 from des.config import DESConfig
+from dataclasses import dataclass, field
+from typing import Any
 
 
 @final
+@dataclass
 class LogData:
     """Container for diagnostic log data."""
 
-    def __init__(self) -> None:
-        """Initialize empty log containers."""
-        self.Ft: list[float] = []
-        self.value: list[NDArray[np.float64]] = []
-        self.mean: list[float] = []
-        self.meanCords: list[NDArray[np.float64]] = []
-        self.pop: list[NDArray[np.float64]] = []
-        self.bestVal: list[float] = []
-        self.worstVal: list[float] = []
-        self.eigen: list[NDArray[np.float64]] = []
+    opt_func: Callable[[NDArray[np.float64]], NDArray[np.float64]] | None = None
+    bounds: tuple[NDArray[np.float64], NDArray[np.float64]] | None = None
+    Ft: list[float] = field(default_factory=list)
+    value: list[NDArray[np.float64]] = field(default_factory=list)
+    mean: list[float] = field(default_factory=list)
+    meanCords: list[NDArray[np.float64]] = field(default_factory=list)
+    pop: list[NDArray[np.float64]] = field(default_factory=list)
+    bestVal: list[float] = field(default_factory=list)
+    worstVal: list[float] = field(default_factory=list)
+    eigen: list[NDArray[np.float64]] = field(default_factory=list)
 
     def clear(self) -> None:
         """Reset all log data."""
-        self.Ft = []
-        self.value = []
-        self.mean = []
-        self.meanCords = []
-        self.pop = []
-        self.bestVal = []
-        self.worstVal = []
-        self.eigen = []
+        self.Ft.clear()
+        self.value.clear()
+        self.mean.clear()
+        self.meanCords.clear()
+        self.pop.clear()
+        self.bestVal.clear()
+        self.worstVal.clear()
+        self.eigen.clear()
 
     def to_dict(self) -> dict[str, list[Any]]:
         """Convert log data to dictionary format."""
@@ -51,7 +55,14 @@ class DiagnosticLogger:
     """
 
     def __init__(
-        self, config: DESConfig, dimensions: int, max_iter: int, population_size: int
+        self,
+        config: DESConfig,
+        dimensions: int,
+        max_iter: int,
+        population_size: int,
+        opt_func,
+        lower_bounds,
+        upper_bounds,
     ) -> None:
         """
         Initialize the diagnostic logger.
@@ -69,6 +80,8 @@ class DiagnosticLogger:
 
         # Initialize data storage
         self.logs = LogData()
+        self.logs.opt_func = opt_func
+        self.logs.bounds = (lower_bounds, upper_bounds)
 
     def log_iteration(
         self,
