@@ -1,18 +1,8 @@
-"""
-DES Algorithm - Differential Evolution Strategy
-"""
+"""DES (Differential Evolution Strategy) algorithm module."""
 
-from des.des_optimizer import DESOptimizer
-from des.utils.boundary_handlers import (
-    BoundaryHandler,
-    BounceBackBoundaryHandler,
-    ClampBoundaryHandler,
-)
+# Import only the config to avoid circular imports
+from src.des.config import DESConfig
 
-__version__ = "0.1.0"
 __all__ = [
-    "DESOptimizer",
-    "BoundaryHandler",
-    "BounceBackBoundaryHandler",
-    "ClampBoundaryHandler",
+    "DESConfig",
 ]

@@ -1,52 +1,32 @@
 """
-Utility functions and classes for DES algorithm.
+Utility modules for the optimization package.
 """
 
-from des.utils.ring_buffer import RingBuffer
-from des.utils.boundary_handlers import (
+# Import core utilities without circular dependencies
+from src.utils.boundary_handlers import (
     BoundaryHandler,
-    BounceBackBoundaryHandler,
-    ClampBoundaryHandler,
+    BoundaryHandlerType,
     create_boundary_handler,
 )
-from des.utils.helpers import (
-    norm,
-    success_probability,
-    calculate_ft,
-    delete_inf_nan,
-)
-
-from des.utils.benchmark_functions import (
-    Sphere,
-    Rastrigin,
-    Rosenbrock,
-    Schwefel,
-    Ackley,
-)
-
-from des.utils.initial_point_generator import (
+from src.utils.initial_point_generator import (
     InitialPointGenerator,
     InitialPointGeneratorType,
 )
-
-from des.utils.des_plotter import DESPlotter
+from src.utils.benchmark_functions import (
+    Sphere,
+    Rastrigin,
+    Rosenbrock,
+    CEC17Function,
+)
 
 __all__ = [
-    "RingBuffer",
     "BoundaryHandler",
-    "BounceBackBoundaryHandler",
-    "ClampBoundaryHandler",
+    "BoundaryHandlerType",
     "create_boundary_handler",
-    "norm",
-    "success_probability",
-    "calculate_ft",
-    "delete_inf_nan",
+    "InitialPointGenerator",
+    "InitialPointGeneratorType",
     "Sphere",
     "Rastrigin",
     "Rosenbrock",
-    "Schwefel",
-    "Ackley",
-    "InitialPointGenerator",
-    "InitialPointGeneratorType",
-    "DESPlotter",
+    "CEC17Function",
 ]

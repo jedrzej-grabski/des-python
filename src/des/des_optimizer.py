@@ -1,123 +1,68 @@
-from typing import Callable, final
-from dataclasses import dataclass
-from scipy.special import gamma
+from typing import Callable, final, Union, TYPE_CHECKING
 import numpy as np
-from numpy.typing import NDArray
 import math
+from numpy.typing import NDArray
+from scipy.special import gamma
+from src.des.config import DESConfig
+from src.logging.des_logger import DESLogData
+from src.utils.boundary_handlers import BoundaryHandler, BoundaryHandlerType
+from src.utils.ring_buffer import RingBuffer
+from src.utils.helpers import delete_inf_nan, calculate_ft
 
-from des.utils.ring_buffer import RingBuffer
-from des.utils.boundary_handlers import (
-    BoundaryHandler,
-    create_boundary_handler,
-    BoundaryHandlerType,
-)
-from des.utils.helpers import (
-    calculate_ft,
-    delete_inf_nan,
-)
-from des.logging.loggers import DiagnosticLogger, LogData
-from des.config import DESConfig
-from des.utils.repair_strategy import RepairStrategy, RepairStrategyType
-
-
-@dataclass
-class OptimizationResult:
-    """
-    Result of an optimization run.
-    """
-
-    best_solution: NDArray[np.float64]
-    best_fitness: float
-    evaluations: int
-    message: str
-    diagnostic: LogData
+from src.core.base_optimizer import BaseOptimizer, OptimizationResult
 
 
 @final
-class DESOptimizer:
-    """
-    Differential Evolution Strategy
-    """
+class DESOptimizer(BaseOptimizer[DESLogData, DESConfig]):
+    """Differential Evolution Strategy optimizer with proper typing."""
 
     def __init__(
         self,
         func: Callable[[NDArray[np.float64]], float],
         initial_point: NDArray[np.float64],
+        config: DESConfig | None = None,
         boundary_handler: BoundaryHandler | None = None,
         boundary_strategy: BoundaryHandlerType | None = None,
-        config: DESConfig | None = None,
-        lower_bounds: float | NDArray[np.float64] | list[float] = -100.0,
-        upper_bounds: float | NDArray[np.float64] | list[float] = 100.0,
+        lower_bounds: Union[float, NDArray[np.float64], list[float]] = -100.0,
+        upper_bounds: Union[float, NDArray[np.float64], list[float]] = 100.0,
     ) -> None:
-        """
-        Initialize the DES optimizer.
+        """Initialize the DES optimizer."""
 
-        Args:
-            func: Objective function to minimize
-            initial_point: Initial guess for the solution
-            lower_bounds: Lower bounds for each dimension or a single value for all dimensions
-            upper_bounds: Upper bounds for each dimension or a single value for all dimensions
-            config: Configuration object for the optimizer
-        """
-        self.func = func
-        self.initial_point = np.array(initial_point, dtype=float)
-        self.dimensions = len(initial_point)
-        self.evaluations = 0
+        # Use default config if none provided
+        if config is None:
+            config = DESConfig(dimensions=len(initial_point))
 
-        # Process bounds
-        if isinstance(lower_bounds, (int, float)):
-            self.lower_bounds = np.full(self.dimensions, lower_bounds)
-        else:
-            self.lower_bounds = np.array(lower_bounds, dtype=float)
-
-        if isinstance(upper_bounds, (int, float)):
-            self.upper_bounds = np.full(self.dimensions, upper_bounds)
-        else:
-            self.upper_bounds = np.array(upper_bounds, dtype=float)
-
-        if boundary_handler is not None:
-            self.boundary_handler = boundary_handler
-        else:
-            boundary_strategy = boundary_strategy or BoundaryHandlerType.CLAMP
-            self.boundary_handler = create_boundary_handler(
-                boundary_strategy, self.lower_bounds, self.upper_bounds
-            )
-
-        # Initialize configuration
-        self.config = config if config is not None else DESConfig(self.dimensions)
-
-        repair_strategy_type = (
-            RepairStrategyType.LAMARCKIAN
-            if self.config.Lamarckism
-            else RepairStrategyType.NON_LAMARCKIAN
-        )
-        self.repair_strategy = RepairStrategy(
-            repair_strategy_type, self.boundary_handler
+        # Initialize base optimizer with proper algorithm name
+        super().__init__(
+            func=func,
+            initial_point=initial_point,
+            config=config,  # Now properly typed as DESConfig
+            algorithm_name="DES",
+            boundary_handler=boundary_handler,
+            boundary_strategy=boundary_strategy,
+            lower_bounds=lower_bounds,
+            upper_bounds=upper_bounds,
         )
 
-    def optimize(self) -> OptimizationResult:
-        """
-        Run the optimization algorithm.
+    def optimize(self) -> OptimizationResult[DESLogData]:
+        """Run the DES optimization algorithm."""
 
-        Returns:
-            OptimizationResult object containing optimization results
-        """
-        # Initialize parameters
+        # Initialize parameters from config - now properly typed!
         N = self.dimensions
-        budget = self.config.budget
-        lambda_ = self.config.population_size
-        pathLength = self.config.pathLength
-        initFt = self.config.initFt
-        histSize = self.config.history
-        c_Ft = self.config.c_Ft
-        cp = self.config.cp
-        max_iter = self.config.maxit
-        lamarckism = self.config.Lamarckism
-        weights = self.config.weights
-        mu = self.config.mu
-        mueff = self.config.mueff
-        ccum = self.config.ccum
-        pathRatio = self.config.pathRatio
+        budget = self.config.budget  # Type: int (from DESConfig)
+        lambda_ = self.config.population_size  # Type: int (from DESConfig)
+        pathLength = self.config.pathLength  # Type: int (from DESConfig)
+        initFt = self.config.initFt  # Type: float (from DESConfig)
+        histSize = self.config.history  # Type: int (from DESConfig)
+        c_Ft = self.config.c_Ft  # Type: float (from DESConfig)
+        cp = self.config.cp  # Type: float (from DESConfig)
+        max_iter = self.config.maxit  # Type: int (from DESConfig)
+        lamarckism = self.config.Lamarckism  # Type: bool (from DESConfig)
+        weights = self.config.weights  # Type: NDArray (from DESConfig)
+        mu = self.config.mu  # Type: int (from DESConfig)
+        mueff = self.config.mueff  # Type: float (from DESConfig)
+        ccum = self.config.ccum  # Type: float (from DESConfig)
+        pathRatio = self.config.pathRatio  # Type: float (from DESConfig)
 
         # Initialize optimization variables
         self.evaluations = 0
@@ -127,25 +72,12 @@ class DESOptimizer:
         message = None
         iter_count = 0
 
-        # Initialize logger
-        logger = self._create_logger(N, max_iter, lambda_)
-
-        weights_pop = np.log(lambda_) - np.log(np.arange(1, lambda_))
-        weights_pop = weights_pop / np.sum(weights_pop)
-
         # Initialize evolution parameters
         hist_head = 0
         history: list[NDArray[np.float64]] = []
         Ft = initFt
 
-        # # Create first population
-        # population = np.random.uniform(
-        #     0.8 * self.lower_bounds[:, None],
-        #     0.8 * self.upper_bounds[:, None],
-        #     size=(N, lambda_),
-        # )
         # Create first population
-
         sigma = (self.upper_bounds - self.lower_bounds) / 6
         population = np.random.normal(
             loc=self.initial_point, scale=sigma, size=(lambda_, N)
@@ -165,7 +97,7 @@ class DESOptimizer:
             population = population_repaired
 
         # Evaluate initial population
-        fitness = self._evaluate_population(
+        fitness = self.evaluate_population(
             population if lamarckism else population_repaired
         )
 
@@ -174,9 +106,7 @@ class DESOptimizer:
         worst_fitness = np.max(fitness)
 
         # Store population and selection means
-        pop_mean = np.mean(
-            population, axis=0
-        )  # Changed to compute mean across individuals
+        pop_mean = np.mean(population, axis=0)
         mu_mean = new_mean
 
         # Initialize matrices for creating diffs
@@ -202,41 +132,39 @@ class DESOptimizer:
             weights = np.log(mu + 1) - np.log(np.arange(1, mu + 1))
             weights = weights / np.sum(weights)
 
-            # Log diagnostic information
-            logger.log_iteration(
+            # Log diagnostic information using the properly typed logger
+            self.logger.log_iteration(
+                iteration=iter_count,
+                evaluations=self.evaluations,
                 ft=Ft,
                 fitness=fitness,
-                mean_fitness=self._evaluate(self.boundary_handler.repair(new_mean)),
-                mean_coords=new_mean,
-                population=population,  # Transpose for logging if logger expects (N, lambda_) shape
+                population=population if self.config.diag_pop else None,
                 best_fitness=best_fitness,
-                worst_fitness=worst_fitness,
-                eigen_values=np.sort(
-                    np.linalg.eigvals(
-                        np.cov(population.T)  # Transpose for covariance calculation
-                    )
-                )[::-1],
+                worst_fitness=(
+                    worst_fitness if worst_fitness is not None else float("inf")
+                ),
+                best_solution=best_solution,
+                mean_fitness=float(np.mean(fitness)),
+                eigenvalues=(
+                    np.sort(np.linalg.eigvals(np.cov(population.T)))[::-1]
+                    if self.config.diag_eigen
+                    else None
+                ),
             )
 
             # Select best mu individuals
             selection = np.argsort(fitness)[:mu]
-            selected_points = population[
-                selection
-            ]  # Changed from population[:, selection]
+            selected_points = population[selection]
 
             # Save selected population in history buffer
             if len(history) < histSize:
-                history.append(
-                    selected_points.T * hist_norm / Ft
-                )  # Transpose to match expected shape
+                history.append(selected_points.T * hist_norm / Ft)
             else:
                 history[hist_head - 1] = selected_points.T * hist_norm / Ft
 
             # Calculate weighted mean of selected points
             old_mean = new_mean.copy()
-            new_mean = np.sum(
-                selected_points * weights.reshape(-1, 1), axis=0
-            )  # Changed axis and reshape
+            new_mean = np.sum(selected_points * weights.reshape(-1, 1), axis=0)
 
             # Write to buffers
             mu_mean = new_mean
@@ -300,148 +228,72 @@ class DESOptimizer:
 
             # Generate new population
             population = (
-                new_mean.reshape(1, -1)  # Changed to row vector
-                + Ft * diffs.T  # Transpose diffs
+                new_mean.reshape(1, -1)
+                + Ft * diffs.T
                 + (1 - 2 / N**2) ** (iter_count / 2)
-                * np.random.normal(size=(lambda_, N))  # Changed shape
+                * np.random.normal(size=(lambda_, N))
                 / chi_N
             )
 
             population = delete_inf_nan(population)
 
             # Check constraints violations and repair if necessary
-            population_temp = population.copy()
-            population, population_repaired, counter_repaired = (
-                self.repair_strategy.repair_population(population)
+            population_repaired = np.array(
+                [self.boundary_handler.repair(individual) for individual in population]
             )
 
             # Count repaired individuals
             counter_repaired = 0
             for i in range(population.shape[0]):
-                if not np.array_equal(
-                    population[i], population_repaired[i]
-                ):  # Changed indexing
+                if not np.array_equal(population[i], population_repaired[i]):
                     counter_repaired += 1
 
             if lamarckism:
                 population = population_repaired
 
-            pop_mean = np.mean(
-                population, axis=0
-            )  # Changed to compute mean across individuals
+            pop_mean = np.mean(population, axis=0)
 
             # Evaluate population
-            fitness = self._evaluate_population(
+            fitness = self.evaluate_population(
                 population if lamarckism else population_repaired
             )
-
-            if not lamarckism:
-                fitness = self.repair_strategy.apply_fitness_strategy(
-                    population, population_repaired, fitness, worst_fitness
-                )
 
             # Check for best fitness
             best_idx = np.argmin(fitness)
             if fitness[best_idx] < best_fitness:
                 best_fitness = fitness[best_idx]
-                best_solution = self.repair_strategy.get_best_solution(
-                    population, population_repaired, int(best_idx)
+                best_solution = (
+                    population_repaired[best_idx]
+                    if not lamarckism
+                    else population[best_idx]
                 )
 
             # Check worst fitness
             worst_idx = np.argmax(fitness)
-            if fitness[worst_idx] > worst_fitness:
+            if (
+                fitness[worst_idx] > worst_fitness
+                if worst_fitness is not None
+                else float("-inf")
+            ):
                 worst_fitness = fitness[worst_idx]
-
-            fitness = self.repair_strategy.apply_fitness_strategy(
-                population, population_repaired, fitness, worst_fitness
-            )
 
             # Check if the mean point is better
             cumulative_mean = 0.8 * cumulative_mean + 0.2 * new_mean
             cumulative_mean_repaired = self.boundary_handler.repair(cumulative_mean)
-            mean_fitness = self._evaluate(cumulative_mean_repaired)
+            mean_fitness = self.evaluate(cumulative_mean_repaired)
 
             if mean_fitness < best_fitness:
                 best_fitness = mean_fitness
                 best_solution = cumulative_mean_repaired
 
         # Create result object
-        result = OptimizationResult(
+        result: OptimizationResult[DESLogData] = OptimizationResult(
             best_solution=best_solution,
             best_fitness=best_fitness,
             evaluations=self.evaluations,
             message=message if message else "Maximum function evaluations reached.",
-            diagnostic=logger.get_logs(),
+            diagnostic=self.get_logs(),
+            algorithm_name="DES",
         )
 
         return result
-
-    def _create_logger(
-        self, dimensions: int, max_iter: int, population_size: int
-    ) -> DiagnosticLogger:
-        """
-        Create a diagnostic logger configured based on the optimizer's config.
-
-        Args:
-            dimensions: Number of dimensions
-            max_iter: Maximum number of iterations
-            population_size: Population size
-
-        Returns:
-            Configured DiagnosticLogger instance
-        """
-        return DiagnosticLogger(
-            self.config,
-            dimensions,
-            max_iter,
-            population_size,
-            self.func,
-            self.lower_bounds,
-            self.upper_bounds,
-        )
-
-    def _evaluate(self, x: NDArray[np.float64]) -> float:
-        """
-        Evaluate a single solution.
-
-        Args:
-            x: Solution to evaluate
-
-        Returns:
-            Fitness value
-        """
-        if self.boundary_handler.is_feasible(x):
-            self.evaluations += 1
-            return self.func(x)
-        else:
-            return float("inf")
-
-    def _evaluate_population(
-        self, population: NDArray[np.float64]
-    ) -> NDArray[np.float64]:
-        """
-        Evaluate a population of solutions.
-
-        Args:
-            population: Matrix of solution vectors (each row is a solution)
-
-        Returns:
-            Array of fitness values
-        """
-        fitness = np.zeros(population.shape[0])
-        budget_left = self.config.budget - self.evaluations
-
-        if budget_left >= population.shape[0]:
-            # Evaluate entire population
-            for i in range(population.shape[0]):
-                fitness[i] = self._evaluate(population[i])
-        else:
-            # Evaluate only what budget allows
-            for i in range(budget_left):
-                fitness[i] = self._evaluate(population[i])
-
-            # Fill rest with infinity
-            fitness[budget_left:] = float("inf")
-
-        return fitness

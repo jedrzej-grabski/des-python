@@ -3,6 +3,8 @@ import numpy as np
 import math
 from numpy.typing import NDArray
 
+from src.core.config_base import BaseConfig
+
 
 def default_population_size(obj: "DESConfig") -> int:
     """Default population size based on dimensions."""
@@ -62,17 +64,13 @@ def default_ft_scale(obj: "DESConfig") -> float:
 
 
 @dataclass
-class DESConfig:
+class DESConfig(BaseConfig):
     """
     Configuration for the DES optimizer.
-
-    This class provides a structured way to configure the Differential Evolution
-    Strategy (DES) optimizer.
+    Extends BaseConfig with DES-specific parameters.
     """
 
-    dimensions: int
-    """Number of dimensions in the problem"""
-
+    # DES-specific parameters
     Ft: float = 1.0
     """Scaling factor of difference vectors"""
 
@@ -88,17 +86,17 @@ class DESConfig:
     Lamarckism: bool = False
     """Whether to use Lamarckian evolution"""
 
-    budget: int = field(init=False)
+    # DES-specific diagnostic logging
+    diag_Ft: bool = False
+    """Log Ft values"""
 
-    population_size: int = field(init=False)
-
+    # Computed/derived parameters
     cp: float = field(init=False)
     """Evolution path decay factor"""
 
     history: int = field(init=False)
     """Size of history window"""
 
-    # Parameters with defaults dependent on other parameters
     mu: int = field(init=False)
     """Number of parents"""
 
@@ -114,40 +112,11 @@ class DESConfig:
     maxit: int = field(init=False)
     """Maximum iterations"""
 
-    # Computed parameters
     mueff: float = field(init=False)
     """Effective selection mass"""
 
     Ft_scale: float = field(init=False)
     """Scaling factor for Ft"""
-
-    # Diagnostic logging options
-    diag_enabled: bool = False
-    """Enable all diagnostics"""
-
-    diag_Ft: bool = False
-    """Log Ft values"""
-
-    diag_value: bool = False
-    """Log population fitness values"""
-
-    diag_mean: bool = False
-    """Log mean fitness"""
-
-    diag_meanCords: bool = False
-    """Log mean coordinates"""
-
-    diag_pop: bool = False
-    """Log populations"""
-
-    diag_bestVal: bool = True
-    """Log best fitness"""
-
-    diag_worstVal: bool = False
-    """Log worst fitness"""
-
-    diag_eigen: bool = False
-    """Log eigenvalues"""
 
     def __post_init__(self) -> None:
         """Calculate derived parameters that depend on other params"""
@@ -173,39 +142,10 @@ class DESConfig:
         # Calculate maxit
         self.maxit = compute_maxit(self.budget, self.population_size)
 
-    def enable_all_diagnostics(self):
-        """Enable all diagnostic logging options."""
-        self.diag_enabled = True
+        # Call parent validation
+        super().validate()
+
+    def enable_all_diagnostics(self) -> None:
+        """Enable all diagnostic logging options including DES-specific ones."""
+        super().enable_all_diagnostics()
         self.diag_Ft = True
-        self.diag_value = True
-        self.diag_mean = True
-        self.diag_meanCords = True
-        self.diag_pop = True
-        self.diag_bestVal = True
-        self.diag_worstVal = True
-        self.diag_eigen = True
-
-    def disable_all_diagnostics(self):
-        """Disable all diagnostic logging options."""
-        self.diag_enabled = False
-        self.diag_Ft = False
-        self.diag_value = False
-        self.diag_mean = False
-        self.diag_meanCords = False
-        self.diag_pop = False
-        self.diag_bestVal = False
-        self.diag_worstVal = False
-        self.diag_eigen = False
-
-    def with_convergence_diagnostics(self):
-        """Enable only diagnostics needed for convergence plots."""
-        self.disable_all_diagnostics()
-        self.diag_bestVal = True
-
-    def with_custom_budget(self, budget: int):
-        """Set custom evaluation budget."""
-        self.budget = budget
-
-    def with_population_size(self, size: int):
-        """Set custom population size."""
-        self.population_size = size
