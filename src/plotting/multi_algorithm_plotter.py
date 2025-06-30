@@ -333,7 +333,6 @@ class MultiAlgorithmPlotter:
         conv_path = save_dir / "convergence_comparison.png" if save_dir else None
         figures["convergence"] = self.plot_convergence_comparison(results, conv_path)
 
-        # Individual algorithm plots
         for algo_name, result in results.items():
             algorithm = AlgorithmChoice(algo_name)
             algo_path = (

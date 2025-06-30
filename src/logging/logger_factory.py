@@ -25,5 +25,4 @@ class LoggerFactory:
             raise NotImplementedError("")
 
 
-# Register known loggers
 LoggerFactory.register_logger(AlgorithmChoice.DES, DESLogger)

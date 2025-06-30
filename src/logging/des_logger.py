@@ -12,7 +12,6 @@ from src.algorithms.des.config import DESConfig
 class DESLogData(BaseLogData):
     """DES-specific log data container."""
 
-    # DES-specific data
     Ft: list[float] = field(default_factory=list)
     evolution_path: list[NDArray[np.float64]] = field(default_factory=list)
     step_size: list[float] = field(default_factory=list)
@@ -64,7 +63,6 @@ class DESLogger(BaseLogger[DESLogData]):
     ) -> None:
         """Log DES iteration data."""
 
-        # Log common data
         self.logs.iteration.append(iteration)
         self.logs.evaluations.append(evaluations)
         self.logs.best_fitness.append(best_fitness)
@@ -87,12 +85,10 @@ class DESLogger(BaseLogger[DESLogData]):
             if len(eigenvalues) > 0:
                 self.logs.condition_number.append(eigenvalues[0] / eigenvalues[-1])
 
-        # Log DES-specific data
         if self.config.diag_Ft:
             self.logs.Ft.append(ft)
 
         if evolution_path is not None:
             self.logs.evolution_path.append(evolution_path.copy())
 
-        # Calculate and log step size (could be derived from Ft)
         self.logs.step_size.append(ft)

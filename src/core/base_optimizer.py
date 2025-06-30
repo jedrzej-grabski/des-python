@@ -15,8 +15,6 @@ from src.utils.boundary_handlers import (
     BoundaryHandlerType,
 )
 
-
-# Type variables
 LogDataType = TypeVar("LogDataType", bound=BaseLogData)
 ConfigType = TypeVar("ConfigType", bound=BaseConfig)
 
@@ -51,11 +49,10 @@ class BaseOptimizer(ABC, Generic[LogDataType, ConfigType]):
         self.func = func
         self.initial_point = np.array(initial_point, dtype=float)
         self.dimensions = len(initial_point)
-        self.config: ConfigType = config  # Now properly typed!
+        self.config: ConfigType = config
         self.algorithm = algorithm
         self.evaluations = 0
 
-        # Process bounds and set up boundary handler
         self.lower_bounds = self._process_bounds(lower_bounds, self.dimensions)
         self.upper_bounds = self._process_bounds(upper_bounds, self.dimensions)
         self._validate_bounds()
@@ -68,7 +65,6 @@ class BaseOptimizer(ABC, Generic[LogDataType, ConfigType]):
                 boundary_strategy, self.lower_bounds, self.upper_bounds
             )
 
-        # Initialize logger using factory
         self.logger: BaseLogger[LogDataType] = LoggerFactory.create_logger(
             algorithm, config
         )
