@@ -2,6 +2,7 @@
 Python Evolutionary Optimization Package
 """
 
+from src.algorithms.choices import AlgorithmChoice
 from src.core.algorithm_factory import AlgorithmFactory
 from src.core.base_optimizer import BaseOptimizer, OptimizationResult
 from src.core.config_base import BaseConfig
@@ -11,14 +12,15 @@ from src.core.config_base import BaseConfig
 def _register_algorithms():
     """Register all available algorithms with the factory."""
     try:
-        from src.des.des_optimizer import DESOptimizer
-        from src.des.config import DESConfig
+        from src.algorithms.des.des_optimizer import DESOptimizer
+        from src.algorithms.des.config import DESConfig
 
-        AlgorithmFactory.register_algorithm("DES", DESOptimizer, DESConfig)
+        AlgorithmFactory.register_algorithm(
+            AlgorithmChoice.DES, DESOptimizer, DESConfig
+        )
     except ImportError:
         pass  # Algorithm not available
 
-    # Add other algorithms here when available
     # try:
     #     from src.mfcmaes.mfcmaes_optimizer import MFCMAESOptimizer
     #     from src.mfcmaes.config import MFCMAESConfig
@@ -27,10 +29,8 @@ def _register_algorithms():
     #     pass
 
 
-# Register algorithms when the module is imported
 _register_algorithms()
 
-__version__ = "0.1.0"
 __all__ = [
     "AlgorithmFactory",
     "BaseOptimizer",

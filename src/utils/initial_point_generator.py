@@ -48,7 +48,7 @@ class InitialPointGenerator:
         Generate an initial point.
 
         Returns:
-            List of floats representing the initial point
+            list of floats representing the initial point
         """
         match self.strategy:
             case InitialPointGeneratorType.NORMAL:

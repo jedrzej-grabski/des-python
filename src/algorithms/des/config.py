@@ -70,7 +70,6 @@ class DESConfig(BaseConfig):
     Extends BaseConfig with DES-specific parameters.
     """
 
-    # DES-specific parameters
     Ft: float = 1.0
     """Scaling factor of difference vectors"""
 
@@ -80,7 +79,7 @@ class DESConfig(BaseConfig):
     pathLength: int = 6
     """Size of evolution path"""
 
-    c_Ft: float = 0
+    c_Ft: float = 1
     """Control parameter for Ft adaptation"""
 
     Lamarckism: bool = False
@@ -120,32 +119,36 @@ class DESConfig(BaseConfig):
 
     def __post_init__(self) -> None:
         """Calculate derived parameters that depend on other params"""
-        # Set dimension-dependent defaults
         self.budget = default_budget(self)
         self.population_size = default_population_size(self)
         self.cp = default_cp(self)
         self.history = default_history(self)
 
-        # Set defaults dependent on other parameters
         self.mu = default_mu(self)
         self.weights = default_weights(self)
         self.ccum = default_ccum(self)
         self.pathRatio = default_pathratio(self)
 
-        # Calculate mueff from weights
         weights_sum_square = np.sum(self.weights**2)
         self.mueff = np.sum(self.weights) ** 2 / weights_sum_square
 
-        # Calculate Ft_scale
         self.Ft_scale = default_ft_scale(self)
 
-        # Calculate maxit
         self.maxit = compute_maxit(self.budget, self.population_size)
 
-        # Call parent validation
         super().validate()
 
     def enable_all_diagnostics(self) -> None:
         """Enable all diagnostic logging options including DES-specific ones."""
         super().enable_all_diagnostics()
         self.diag_Ft = True
+
+    def __str__(self) -> str:
+        """String representation of the DESConfig."""
+        return (
+            f"DESConfig(dimensions={self.dimensions}, budget={self.budget}, "
+            f"population_size={self.population_size}, Ft={self.Ft}, "
+            f"initFt={self.initFt}, pathLength={self.pathLength}, "
+            f"c_Ft={self.c_Ft}, Lamarckism={self.Lamarckism}, "
+            f"diag_Ft={self.diag_Ft})"
+        )

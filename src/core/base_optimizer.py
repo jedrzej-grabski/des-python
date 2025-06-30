@@ -4,6 +4,7 @@ import numpy as np
 from numpy.typing import NDArray
 from dataclasses import dataclass
 
+from src.algorithms.choices import AlgorithmChoice
 from src.logging.base_logger import BaseLogData, BaseLogger
 
 from src.logging.logger_factory import LoggerFactory
@@ -29,7 +30,7 @@ class OptimizationResult(Generic[LogDataType]):
     evaluations: int
     message: str
     diagnostic: LogDataType
-    algorithm_name: str = "Unknown"
+    algorithm: AlgorithmChoice = AlgorithmChoice.Unknown
 
 
 class BaseOptimizer(ABC, Generic[LogDataType, ConfigType]):
@@ -40,7 +41,7 @@ class BaseOptimizer(ABC, Generic[LogDataType, ConfigType]):
         func: Callable[[NDArray[np.float64]], float],
         initial_point: NDArray[np.float64],
         config: ConfigType,
-        algorithm_name: str = "Unknown",
+        algorithm: AlgorithmChoice = AlgorithmChoice.Unknown,
         boundary_handler: BoundaryHandler | None = None,
         boundary_strategy: BoundaryHandlerType | None = None,
         lower_bounds: Union[float, NDArray[np.float64], list[float]] = -100.0,
@@ -51,7 +52,7 @@ class BaseOptimizer(ABC, Generic[LogDataType, ConfigType]):
         self.initial_point = np.array(initial_point, dtype=float)
         self.dimensions = len(initial_point)
         self.config: ConfigType = config  # Now properly typed!
-        self.algorithm_name = algorithm_name
+        self.algorithm = algorithm
         self.evaluations = 0
 
         # Process bounds and set up boundary handler
@@ -69,7 +70,7 @@ class BaseOptimizer(ABC, Generic[LogDataType, ConfigType]):
 
         # Initialize logger using factory
         self.logger: BaseLogger[LogDataType] = LoggerFactory.create_logger(
-            algorithm_name, config
+            algorithm, config
         )
 
     @staticmethod

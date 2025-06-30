@@ -105,7 +105,7 @@ def sample_from_history(
     Sample indices from history entries.
 
     Args:
-        history: List of history entries
+        history: list of history entries
         history_sample: Indices of history entries to sample from
         lambda_: Number of samples to generate
 

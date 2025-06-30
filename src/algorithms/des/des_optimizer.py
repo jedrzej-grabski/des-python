@@ -3,7 +3,8 @@ import numpy as np
 import math
 from numpy.typing import NDArray
 from scipy.special import gamma
-from src.des.config import DESConfig
+from src.algorithms.choices import AlgorithmChoice
+from src.algorithms.des.config import DESConfig
 from src.logging.des_logger import DESLogData
 from src.utils.boundary_handlers import BoundaryHandler, BoundaryHandlerType
 from src.utils.ring_buffer import RingBuffer
@@ -28,16 +29,14 @@ class DESOptimizer(BaseOptimizer[DESLogData, DESConfig]):
     ) -> None:
         """Initialize the DES optimizer."""
 
-        # Use default config if none provided
         if config is None:
             config = DESConfig(dimensions=len(initial_point))
 
-        # Initialize base optimizer with proper algorithm name
         super().__init__(
             func=func,
             initial_point=initial_point,
-            config=config,  # Now properly typed as DESConfig
-            algorithm_name="DES",
+            config=config,
+            algorithm=AlgorithmChoice.DES,
             boundary_handler=boundary_handler,
             boundary_strategy=boundary_strategy,
             lower_bounds=lower_bounds,
@@ -47,24 +46,22 @@ class DESOptimizer(BaseOptimizer[DESLogData, DESConfig]):
     def optimize(self) -> OptimizationResult[DESLogData]:
         """Run the DES optimization algorithm."""
 
-        # Initialize parameters from config - now properly typed!
         N = self.dimensions
-        budget = self.config.budget  # Type: int (from DESConfig)
-        lambda_ = self.config.population_size  # Type: int (from DESConfig)
-        pathLength = self.config.pathLength  # Type: int (from DESConfig)
-        initFt = self.config.initFt  # Type: float (from DESConfig)
-        histSize = self.config.history  # Type: int (from DESConfig)
-        c_Ft = self.config.c_Ft  # Type: float (from DESConfig)
-        cp = self.config.cp  # Type: float (from DESConfig)
-        max_iter = self.config.maxit  # Type: int (from DESConfig)
-        lamarckism = self.config.Lamarckism  # Type: bool (from DESConfig)
-        weights = self.config.weights  # Type: NDArray (from DESConfig)
-        mu = self.config.mu  # Type: int (from DESConfig)
-        mueff = self.config.mueff  # Type: float (from DESConfig)
-        ccum = self.config.ccum  # Type: float (from DESConfig)
-        pathRatio = self.config.pathRatio  # Type: float (from DESConfig)
+        budget = self.config.budget
+        lambda_ = self.config.population_size
+        pathLength = self.config.pathLength
+        initFt = self.config.initFt
+        histSize = self.config.history
+        c_Ft = self.config.c_Ft
+        cp = self.config.cp
+        max_iter = self.config.maxit
+        lamarckism = self.config.Lamarckism
+        weights = self.config.weights
+        mu = self.config.mu
+        mueff = self.config.mueff
+        ccum = self.config.ccum
+        pathRatio = self.config.pathRatio
 
-        # Initialize optimization variables
         self.evaluations = 0
         best_fitness = float("inf")
         best_solution = self.initial_point.copy()
@@ -72,7 +69,6 @@ class DESOptimizer(BaseOptimizer[DESLogData, DESConfig]):
         message = None
         iter_count = 0
 
-        # Initialize evolution parameters
         hist_head = 0
         history: list[NDArray[np.float64]] = []
         Ft = initFt
@@ -132,7 +128,6 @@ class DESOptimizer(BaseOptimizer[DESLogData, DESConfig]):
             weights = np.log(mu + 1) - np.log(np.arange(1, mu + 1))
             weights = weights / np.sum(weights)
 
-            # Log diagnostic information using the properly typed logger
             self.logger.log_iteration(
                 iteration=iter_count,
                 evaluations=self.evaluations,
@@ -286,14 +281,13 @@ class DESOptimizer(BaseOptimizer[DESLogData, DESConfig]):
                 best_fitness = mean_fitness
                 best_solution = cumulative_mean_repaired
 
-        # Create result object
         result: OptimizationResult[DESLogData] = OptimizationResult(
             best_solution=best_solution,
             best_fitness=best_fitness,
             evaluations=self.evaluations,
             message=message if message else "Maximum function evaluations reached.",
             diagnostic=self.get_logs(),
-            algorithm_name="DES",
+            algorithm=AlgorithmChoice.DES,
         )
 
         return result

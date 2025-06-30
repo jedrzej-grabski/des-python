@@ -1,10 +1,11 @@
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional, Protocol, TypeVar, Generic
+from typing import Any, Protocol, TypeVar, Generic
 import numpy as np
 from numpy.typing import NDArray
 from dataclasses import dataclass, field
 
-# Create a generic type variable for log data
+from src.algorithms.choices import AlgorithmChoice
+
 LogDataType = TypeVar("LogDataType", bound="BaseLogData")
 
 
@@ -20,19 +21,17 @@ class LoggerProtocol(Protocol):
 class BaseLogData:
     """Base container for diagnostic log data shared across algorithms."""
 
-    # Common data across all algorithms
-    iteration: List[int] = field(default_factory=list)
-    evaluations: List[int] = field(default_factory=list)
-    best_fitness: List[float] = field(default_factory=list)
-    worst_fitness: List[float] = field(default_factory=list)
-    mean_fitness: List[float] = field(default_factory=list)
-    std_fitness: List[float] = field(default_factory=list)
-    population: List[NDArray[np.float64]] = field(default_factory=list)
-    best_solution: List[NDArray[np.float64]] = field(default_factory=list)
+    iteration: list[int] = field(default_factory=list)
+    evaluations: list[int] = field(default_factory=list)
+    best_fitness: list[float] = field(default_factory=list)
+    worst_fitness: list[float] = field(default_factory=list)
+    mean_fitness: list[float] = field(default_factory=list)
+    std_fitness: list[float] = field(default_factory=list)
+    population: list[NDArray[np.float64]] = field(default_factory=list)
+    best_solution: list[NDArray[np.float64]] = field(default_factory=list)
 
-    # Optional common data
-    eigenvalues: List[NDArray[np.float64]] = field(default_factory=list)
-    condition_number: List[float] = field(default_factory=list)
+    eigenvalues: list[NDArray[np.float64]] = field(default_factory=list)
+    condition_number: list[float] = field(default_factory=list)
 
     def clear_common(self) -> None:
         """Reset common log data."""
@@ -47,7 +46,7 @@ class BaseLogData:
         self.eigenvalues.clear()
         self.condition_number.clear()
 
-    def to_dict_common(self) -> Dict[str, List[Any]]:
+    def to_dict_common(self) -> dict[str, list[Any]]:
         """Convert common log data to dictionary format."""
         return {
             "iteration": self.iteration,
@@ -66,7 +65,7 @@ class BaseLogData:
         """Reset all log data - to be overridden in subclasses."""
         self.clear_common()
 
-    def to_dict(self) -> Dict[str, List[Any]]:
+    def to_dict(self) -> dict[str, list[Any]]:
         """Convert all log data to dictionary format - to be overridden in subclasses."""
         return self.to_dict_common()
 
@@ -74,9 +73,11 @@ class BaseLogData:
 class BaseLogger(ABC, Generic[LogDataType]):
     """Base class for algorithm-specific loggers."""
 
-    def __init__(self, config, algorithm_name: str = "Unknown"):
+    def __init__(
+        self, config, algorithm: AlgorithmChoice = AlgorithmChoice.Unknown
+    ) -> None:
         self.config = config
-        self.algorithm_name = algorithm_name
+        self.algorithm = algorithm
         self.logs: LogDataType = self._create_log_data()
 
     @abstractmethod
@@ -93,7 +94,7 @@ class BaseLogger(ABC, Generic[LogDataType]):
         """Get all logged data."""
         return self.logs
 
-    def get_logs_dict(self) -> Dict[str, Any]:
+    def get_logs_dict(self) -> dict[str, Any]:
         """Get all logged data as dictionary."""
         return self.logs.to_dict()
 
@@ -101,6 +102,6 @@ class BaseLogger(ABC, Generic[LogDataType]):
         """Clear all logged data."""
         self.logs.clear()
 
-    def get_algorithm_name(self) -> str:
+    def get_algorithm(self) -> AlgorithmChoice:
         """Get the algorithm name."""
-        return self.algorithm_name
+        return self.algorithm

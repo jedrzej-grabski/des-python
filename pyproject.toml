@@ -1,5 +1,5 @@
 [project]
-name = "des-python"
+name = "python-evo"
 version = "0.1.0"
 description = "Default template for PDM package"
 authors = [
@@ -12,6 +12,7 @@ license = {text = "MIT"}
 
 [tool.pdm.scripts]
 run-example = "python -m examples.simple_optimization"
+run-r = "python -m examples.run_for_r_comparison"
 
 [tool.pdm]
 distribution = false

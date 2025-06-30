@@ -1,7 +1,6 @@
 import numpy as np
 from numpy.typing import NDArray
 from collections import deque
-from typing import List, Union
 
 
 class RingBuffer:

@@ -1,10 +1,11 @@
-from typing import Any, List
+from typing import Any
 import numpy as np
 from numpy.typing import NDArray
 from dataclasses import dataclass, field
 
+from src.algorithms.choices import AlgorithmChoice
 from src.logging.base_logger import BaseLogger, BaseLogData
-from src.des.config import DESConfig
+from src.algorithms.des.config import DESConfig
 
 
 @dataclass
@@ -12,9 +13,9 @@ class DESLogData(BaseLogData):
     """DES-specific log data container."""
 
     # DES-specific data
-    Ft: List[float] = field(default_factory=list)
-    evolution_path: List[NDArray[np.float64]] = field(default_factory=list)
-    step_size: List[float] = field(default_factory=list)
+    Ft: list[float] = field(default_factory=list)
+    evolution_path: list[NDArray[np.float64]] = field(default_factory=list)
+    step_size: list[float] = field(default_factory=list)
 
     def clear(self) -> None:
         """Reset all log data including DES-specific."""
@@ -23,7 +24,7 @@ class DESLogData(BaseLogData):
         self.evolution_path.clear()
         self.step_size.clear()
 
-    def to_dict(self) -> dict[str, List[Any]]:
+    def to_dict(self) -> dict[str, list[Any]]:
         """Convert all log data to dictionary format."""
         result = self.to_dict_common()
         result.update(
@@ -40,7 +41,7 @@ class DESLogger(BaseLogger[DESLogData]):
     """Logger for DES algorithm with proper typing."""
 
     def __init__(self, config: DESConfig):
-        super().__init__(config, "DES")
+        super().__init__(config, AlgorithmChoice.DES)
 
     def _create_log_data(self) -> DESLogData:
         """Create DES-specific log data container."""

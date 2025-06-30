@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional, Any, Union
+from typing import Optional, Any, Union
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 import numpy as np
@@ -6,6 +6,7 @@ from numpy.typing import NDArray
 import seaborn as sns
 from pathlib import Path
 
+from src.algorithms.choices import AlgorithmChoice
 from src.logging.base_logger import BaseLogData
 from src.core.base_optimizer import OptimizationResult
 from src.logging.des_logger import DESLogData
@@ -29,7 +30,7 @@ class MultiAlgorithmPlotter:
 
     def plot_convergence_comparison(
         self,
-        results: Dict[str, OptimizationResult],
+        results: dict[AlgorithmChoice, OptimizationResult],
         save_path: Optional[Union[str, Path]] = None,
         title: str = "Algorithm Convergence Comparison",
         log_scale: bool = True,
@@ -87,7 +88,7 @@ class MultiAlgorithmPlotter:
     def plot_algorithm_specific_metrics(
         self,
         result: OptimizationResult,
-        algorithm_name: str,
+        algorithm: AlgorithmChoice,
         save_path: Optional[Union[str, Path]] = None,
     ) -> Figure:
         """
@@ -95,7 +96,7 @@ class MultiAlgorithmPlotter:
 
         Args:
             result: Optimization result
-            algorithm_name: Name of the algorithm
+            algorithm: Name of the algorithm
             save_path: Path to save the plot
 
         Returns:
@@ -103,10 +104,10 @@ class MultiAlgorithmPlotter:
         """
         log_data = result.diagnostic
 
-        if algorithm_name.upper() == "DES":
+        if algorithm == AlgorithmChoice.DES:
             return self._plot_des_metrics(log_data, save_path)
         else:
-            return self._plot_generic_metrics(log_data, algorithm_name, save_path)
+            return self._plot_generic_metrics(log_data, algorithm, save_path)
 
     def _plot_des_metrics(
         self, log_data: DESLogData, save_path: Optional[Union[str, Path]] = None
@@ -182,7 +183,7 @@ class MultiAlgorithmPlotter:
     def _plot_generic_metrics(
         self,
         log_data: BaseLogData,
-        algorithm_name: str,
+        algorithm: AlgorithmChoice,
         save_path: Optional[Union[str, Path]] = None,
     ) -> Figure:
         """Plot generic metrics for unknown algorithms."""
@@ -227,7 +228,7 @@ class MultiAlgorithmPlotter:
             axes[3].set_ylabel(metric_name.replace("_", " ").title())
             axes[3].grid(True, alpha=0.3)
 
-        plt.suptitle(f"{algorithm_name} Algorithm Metrics", fontsize=16)
+        plt.suptitle(f"{algorithm} Algorithm Metrics", fontsize=16)
         plt.tight_layout()
 
         if save_path:
@@ -237,7 +238,7 @@ class MultiAlgorithmPlotter:
 
     def _find_custom_metric(
         self, log_data: BaseLogData
-    ) -> Optional[tuple[str, List[Any]]]:
+    ) -> Optional[tuple[str, list[Any]]]:
         """Find the first available custom metric in log data."""
         common_attrs = {
             "iteration",
@@ -267,7 +268,7 @@ class MultiAlgorithmPlotter:
 
     def plot_parameter_evolution(
         self,
-        results: Dict[str, OptimizationResult],
+        results: dict[AlgorithmChoice, OptimizationResult],
         parameter_name: str,
         save_path: Optional[Union[str, Path]] = None,
         title: Optional[str] = None,
@@ -309,9 +310,9 @@ class MultiAlgorithmPlotter:
 
     def create_summary_report(
         self,
-        results: Dict[str, OptimizationResult],
+        results: dict[str, OptimizationResult],
         save_dir: Optional[Union[str, Path]] = None,
-    ) -> Dict[str, Figure]:
+    ) -> dict[str, Figure]:
         """
         Create a comprehensive summary report with multiple plots.
 
@@ -334,11 +335,12 @@ class MultiAlgorithmPlotter:
 
         # Individual algorithm plots
         for algo_name, result in results.items():
+            algorithm = AlgorithmChoice(algo_name)
             algo_path = (
                 save_dir / f"{algo_name.lower()}_metrics.png" if save_dir else None
             )
             figures[f"{algo_name}_metrics"] = self.plot_algorithm_specific_metrics(
-                result, algo_name, algo_path
+                result, algorithm, algo_path
             )
 
         return figures
